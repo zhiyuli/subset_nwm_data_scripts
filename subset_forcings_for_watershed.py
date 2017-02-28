@@ -20,6 +20,12 @@ def run_program(shp, data_dir, output_fpath):
                 subset_and_combine_files(data_dir, grid_cells_indices_list, output_fpath)
                 print "DONE"
 
+    # geojson_str = '{"rings":[[[-97, 32], [-97, 33], [-96, 33], [-97,32]]],"spatialReference":{"wkid":4326}}'
+    # grid_cells_indices_list = get_grid_cells_indices_list(geojson_str)
+    #
+    # if grid_cells_indices_list:
+    #     subset_and_combine_files("/home/drew/Desktop/nwm", grid_cells_indices_list, "/home/drew/Desktop/nwm/output")
+    #     print "DONE"
 
 def subset_and_combine_files(data_dir, grid_cells_indices_list, output_fpath):
     temp_dir = get_temp_dir()
@@ -75,11 +81,12 @@ def subset_and_combine_files(data_dir, grid_cells_indices_list, output_fpath):
 
 
 def extract_geometry_from_shapefile(shp):
-    shp_reader = shapefile.Reader(shp=open(shp), dbf=open(shp.replace('shp', 'dbf')),
-                                  shx=open(shp.replace('shp', 'shp')))
+    # shp_reader = shapefile.Reader(shp=open(shp), dbf=open(shp.replace('shp', 'dbf')),
+    #                               shx=open(shp.replace('shp', 'shx')))
+    shp_reader = shapefile.Reader(shp)
     shape_records = shp_reader.shapeRecords()
-    if len(shape_records) > 1:
-        raise Exception
+    #if len(shape_records) > 1:
+    #    raise Exception
     geom = shape_records[0].shape.__geo_interface__
 
     return geom
@@ -217,5 +224,7 @@ def get_crs_code(shp_file):
     return code
 
 
-run_program(argv[1], argv[2], argv[3])
+#run_program(argv[1], argv[2], argv[3])
+run_program("/home/drew/Desktop/state/utah.shp", "/home/drew/Desktop/nwm", "/home/drew/Desktop/nwm/output")
+
 
