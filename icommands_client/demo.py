@@ -7,14 +7,14 @@ if __name__ == "__main__":
     # IRODS_DEFAULT_RESOURCE = 'hydrotest41Resc'
     # IRODS_ZONE = 'hydrotest41Zone'
     # IRODS_USERNAME = 'hsproxy'
-    # IRODS_AUTH = 'proxywater1'
+    # IRODS_AUTH = ''
 
     IRODS_HOST = 'nwm.renci.org'
     IRODS_PORT = '1247'
     IRODS_DEFAULT_RESOURCE = ''
     IRODS_ZONE = 'nwmZone'
     IRODS_USERNAME = 'nwm-reader'
-    IRODS_AUTH = 'nwmreader'
+    IRODS_AUTH = ''
 
     icommands = ICommands()
 
