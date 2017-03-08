@@ -228,9 +228,6 @@ def get_huc_bbox_shapely_shape_obj(huc_type=None, huc_id=None):
     elif huc_type == "huc_12" and len(huc_id) != 12:
         raise Exception("Invalid huc_12 comid")
 
-    if huc_type not in ["huc_12", "huc_8"]:
-        raise exceptions.NotImplementedError()
-
     huc_wkt = query_huc(huc_type=huc_type, huc_id=huc_id)
 
     shape_obj = shapely.wkt.loads(huc_wkt)
@@ -261,9 +258,9 @@ def query_huc(huc_type, huc_id):
 
 if __name__ == "__main__":
 
-    # shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
-    # #shp_path = "/home/drew/Desktop/state/state_local.shp"
-    # query_stream_comid_and_grid_indices(query_type="shapefile", shp_path=shp_path)
+    shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
+    #shp_path = "/home/drew/Desktop/state/state_local.shp"
+    query_comids_and_grid_indices(query_type="shapefile", shp_path=shp_path)
 
     # geojson_str = '{"type":"Polygon",' \
     #               '"coordinates":[[[-109.436035, 43.011979],[-93.361976,42.599528],' \
@@ -280,5 +277,8 @@ if __name__ == "__main__":
     #                                     geom_str=input_wkt,
     #                                     in_epsg=input_epsg)
 
-    # query_stream_comid_and_grid_indices(query_type="huc_12", huc_id="030902040700")
-    query_comids_and_grid_indices(query_type="huc_8", huc_id="18090203")
+    #query_comids_and_grid_indices(query_type="huc_12", huc_id="030902040700")
+    #query_comids_and_grid_indices(query_type="huc_10", huc_id="1210030202")
+    #query_comids_and_grid_indices(query_type="huc_8", huc_id="18090203")
+
+    pass
