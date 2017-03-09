@@ -57,6 +57,7 @@ def query_comids_and_grid_indices(query_type="shapefile", shp_path=None, geom_st
 
     print data["grid_land"], data["stream"]["count"], data["reservoir"]["count"]
 
+
     pass
 
 
