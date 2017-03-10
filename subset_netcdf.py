@@ -1,6 +1,9 @@
 import subprocess
 import shutil
 import os
+import logging
+
+logging.basicConfig(level=logging.WARNING)
 
 from subsetting_lib import subset_grid_file, subset_comid_file
 
@@ -29,8 +32,7 @@ def subset_nwm_netcdf(grid=None,
                       file_type=None,
                       input_folder_path=None,
                       output_folder_path=None,
-                      template_version="v1.1",
-                      debug=False):
+                      template_version="v1.1"):
 
     data_type = data_type.lower()
     model_type = model_type.lower() if model_type else None
@@ -49,17 +51,17 @@ def subset_nwm_netcdf(grid=None,
     if data_type == "forcing":
         if model_type == "analysis_assim":
             template_filename = "nwm.tHHz.forcing_analysis_assim.tm00.conus.cdl_template"
-            var_list.append(["HH", range(24)])
+            var_list.append(["HH", range(24)])  # 0, 1, ... 23
         elif model_type == "short_range":
             template_filename = "nwm.tHHz.forcing_short_range.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(24)]) # 0, 1, ... 23
-            var_list.append(["XXX", range(1, 19)]) # 1 ,2 ... 18
+            var_list.append(["HH", range(24)])  # 0, 1, ... 23
+            var_list.append(["XXX", range(1, 19)])  # 1, 2 ... 18
         elif model_type == "medium_range":
             template_filename = "nwm.tHHz.forcing_medium_range.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(0, 19, 6)])
-            var_list.append(["XXX", range(0, 126, 6)])
+            var_list.append(["HH", range(0, 19, 6)])  # 0, 6, 12, 18 ?????
+            var_list.append(["XXX", range(1, 241)])  # 1, 2, ....240
         elif model_type == "long_range":
-            raise NotImplementedError()
+            raise Exception("Long-range forecast has no dedicated forcing files.")
 
     elif data_type == "forecast":
         if model_type == "analysis_assim":
@@ -86,8 +88,8 @@ def subset_nwm_netcdf(grid=None,
                 raise NotImplementedError()
 
         elif model_type == "medium_range":
-            var_list.append(["HH", range(0, 19, 6)])  # 0, 6, ... 18
-            var_list.append(["XXX", range(0, 121, 6)])  # 0 ,6 ... 120
+            var_list.append(["HH", range(0, 19, 6)])  # 0, 6, ... 18 ????
+            var_list.append(["XXX", range(3, 243, 3)])  # 3, 6, 9, ... 240
             if file_type == "channel":
                 template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
             elif file_type == "land":
@@ -133,10 +135,21 @@ def subset_nwm_netcdf(grid=None,
 
     for cdl_filename in cdl_filename_list:
 
+        out_nc_filename = cdl_filename.replace(".cdl", ".nc")
+        out_nc_file = os.path.join(out_nc_folder_path, out_nc_filename)
+
+        # check if input file does not exist, skip creating empty netcdf and remove cdl
+        in_nc_filename = out_nc_filename
+        in_nc_file = os.path.join(in_nc_folder_path,
+                                  in_nc_filename)
+        if not os.path.isfile(in_nc_file):
+            logging.info("Original netcdf missing @: {0}".format(in_nc_file))
+            # skip this netcdf as its original file is missing
+            continue
+
         cdl_file = os.path.join(out_nc_folder_path, cdl_filename)
         if os.path.isfile(cdl_file):
-            if debug:
-                print "Overwriting cdl file @: {0}".format(cdl_file)
+                logging.warn("Overwriting cdl file @: {0}".format(cdl_file))
         shutil.copyfile(template_file, cdl_file)
 
         content_list = []
@@ -152,22 +165,8 @@ def subset_nwm_netcdf(grid=None,
         content_list.append(["{%model_output_valid_time%}", "2020-01-01_00:00:00"])
         render_cdl_file(content_list=content_list, file_path=cdl_file)
 
-        out_nc_filename = cdl_filename.replace(".cdl", ".nc")
-        out_nc_file = os.path.join(out_nc_folder_path, out_nc_filename)
-
-        # check if input file does not exist, skip creating empty netcdf and remove cdl
-        in_nc_filename = out_nc_filename
-        in_nc_file = os.path.join(in_nc_folder_path,
-                                  in_nc_filename)
-        if not os.path.isfile(in_nc_file):
-            if debug:
-                print "Original netcdf missing @: {0}".format(in_nc_file)
-            os.remove(cdl_file)
-            continue
-
         if os.path.isfile(out_nc_file):
-            if debug:
-                print "Overwriting nc file @: {0}".format(out_nc_file)
+                logging.warn("Overwriting nc file @: {0}".format(out_nc_file))
         if not os.path.exists(out_nc_folder_path):
             os.makedirs(out_nc_folder_path)
         create_nc_from_cdf(cdl_file=cdl_file, out_file=out_nc_file)
@@ -633,6 +632,8 @@ if __name__ == "__main__":
                 data_type_list_copy = subset_work_dict['file_type']
                 if data_type == "forcing":
                     data_type_list_copy = [None]
+                    if model_type == "long_range":
+                        continue
                 for file_type in data_type_list_copy:
                     try:
                         comid_list = stream_comid_list
@@ -648,8 +649,9 @@ if __name__ == "__main__":
                                           output_folder_path=output_folder_path,
                                           template_version=template_version)
                     except Exception as ex:
-                        print type(ex), ex.message
+                        logging.error(str(type(ex)) + ex.message)
 
+    # ncrcat -h file*.nc output.nc
     print "Done"
 
 
