@@ -2,6 +2,10 @@ import subprocess
 import shutil
 import os
 import logging
+import uuid
+import re
+import copy
+
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -24,7 +28,8 @@ def create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True):
         os.remove(cdl_file)
 
 
-def subset_nwm_netcdf(grid=None,
+def subset_nwm_netcdf(job_id=None,
+                      grid=None,
                       comid_list=None,
                       simulation_date=None,
                       data_type=None,
@@ -34,6 +39,9 @@ def subset_nwm_netcdf(grid=None,
                       output_folder_path=None,
                       template_version="v1.1"):
 
+    if job_id is None:
+        job_id = ""
+    output_folder_path = os.path.join(output_folder_path, job_id)
     data_type = data_type.lower()
     model_type = model_type.lower() if model_type else None
     file_type = file_type.lower() if file_type else None
@@ -51,21 +59,22 @@ def subset_nwm_netcdf(grid=None,
     if data_type == "forcing":
         if model_type == "analysis_assim":
             template_filename = "nwm.tHHz.forcing_analysis_assim.tm00.conus.cdl_template"
-            var_list.append(["HH", range(24)])  # 0, 1, ... 23
+            var_list.append(["HH", range(24)])  # 00, 01, ... 23
         elif model_type == "short_range":
             template_filename = "nwm.tHHz.forcing_short_range.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(24)])  # 0, 1, ... 23
-            var_list.append(["XXX", range(1, 19)])  # 1, 2 ... 18
+            var_list.append(["HH", range(24)])  # 00, 01, ... 23
+            var_list.append(["XXX", range(1, 19)])  # 001, 0002 ... 018
         elif model_type == "medium_range":
             template_filename = "nwm.tHHz.forcing_medium_range.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(0, 19, 6)])  # 0, 6, 12, 18 ?????
-            var_list.append(["XXX", range(1, 241)])  # 1, 2, ....240
+            var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
+            var_list.append(["XXX", range(1, 241)])  # 001, 002, .... 240
         elif model_type == "long_range":
             raise Exception("Long-range forecast has no dedicated forcing files.")
 
     elif data_type == "forecast":
         if model_type == "analysis_assim":
-            var_list.append(["HH", range(24)])  # 0, 1, 2...23
+            var_list.append(["HH", range(24)])  # 00, 01, 02...23
+
             if file_type == "channel":
                 template_filename = "nwm.tHHz.analysis_assim.channel_rt.tm00.conus.cdl_template"
             elif file_type == "land":
@@ -76,8 +85,9 @@ def subset_nwm_netcdf(grid=None,
                 raise NotImplementedError()
 
         elif model_type == "short_range":
-            var_list.append(["HH", range(24)])  # 0, 1, ... 23
-            var_list.append(["XXX", range(1, 19)])  # 1 ,2 ... 18
+            var_list.append(["HH", range(24)])  # 00, 01, ... 23
+            var_list.append(["XXX", range(1, 19)])  # 001, 002 ... 18
+
             if file_type == "channel":
                 template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
             elif file_type == "land":
@@ -88,8 +98,9 @@ def subset_nwm_netcdf(grid=None,
                 raise NotImplementedError()
 
         elif model_type == "medium_range":
-            var_list.append(["HH", range(0, 19, 6)])  # 0, 6, ... 18 ????
-            var_list.append(["XXX", range(3, 243, 3)])  # 3, 6, 9, ... 240
+            var_list.append(["HH", range(0, 19, 6)])  # 00, 06, ... 18
+            var_list.append(["XXX", range(3, 243, 3)])  # 003, 006, 009, ... 240
+
             if file_type == "channel":
                 template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
             elif file_type == "land":
@@ -99,13 +110,35 @@ def subset_nwm_netcdf(grid=None,
             elif file_type == "terrain":
                 raise NotImplementedError()
 
-        elif model_type == "long_range":
-            raise NotImplementedError()
+        elif "long_range_mem" in model_type:
+            mem_id = int(model_type[-1])
+            if mem_id in [1, 2, 3, 4]:
+                var_list.append(["M", [mem_id]])  # 1, 2, 3, 4
+                var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
+                var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
+
+                if file_type == "channel":
+                    template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
+                elif file_type == "land":
+                    template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
+                elif file_type == "reservoir":
+                    template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
+                elif file_type == "terrain":
+                    raise NotImplementedError()
+            else:
+                raise Exception("Invalid long_rang model type @: {0}".format(model_type))
+
     else:
         raise Exception("invalid data_type: {0}".format(data_type))
 
-    template_file = os.path.join(template_folder_path, template_version,
-                                 data_type, model_type, template_filename)
+    if "long_range_mem" in model_type:
+        # long_range uses same templates for all mem1-mem4
+        template_file = os.path.join(template_folder_path, template_version,
+                                     data_type, "long_range", template_filename)
+    else:
+        template_file = os.path.join(template_folder_path, template_version,
+                                     data_type, model_type, template_filename)
+
     if not os.path.isfile(template_file):
         raise Exception("template file missing @: {0}".format(template_file))
 
@@ -124,6 +157,7 @@ def subset_nwm_netcdf(grid=None,
                 cdl_filename_list_new.append(cld_new)
         cdl_filename_list = cdl_filename_list_new
 
+    simulation_date = "nwm." + simulation_date
     out_nc_folder_path = os.path.join(output_folder_path, simulation_date, model_type)
     in_nc_folder_path = os.path.join(input_folder_path, simulation_date, model_type)
     if data_type == "forcing":
@@ -184,6 +218,64 @@ def subset_nwm_netcdf(grid=None,
                               out_nc_file=out_nc_file,
                               comid_list=comid_list)
 
+
+def merge_netcdf(input_base_path=None, output_base_path=None):
+
+    output_base_path = input_base_path
+    folder_list = ["forcing_analysis_assim", "forcing_short_range", "forcing_medium_range",
+                   "analysis_assim", "short_range", "medium_range",
+                   "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
+
+    ncrcat_cmd_base = ["ncrcat", "-h"]
+    for model in folder_list:
+        ncrcat_cmd = copy.copy(ncrcat_cmd_base)
+        if "forcing_" in model:
+
+            if "analysis_assim" in model:
+                fn_template = "nwm.t{HH}z.{model}.tm{XXX}.conus.nc"
+                HH_re_list = ["\d\d"]
+                HH_merged_list = ["ALL"]
+                XXX_re_list = ["00"]
+                XXX_merged_list = ["00"]
+            elif "short_range" in model:
+                fn_template = "nwm.t{HH}z.{model}.f{XXX}.conus.nc"
+                HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
+                HH_merged_list = HH_re_list
+                XXX_re_list = ["\d\d\d"]
+                XXX_merged_list = ["ALL"]
+
+            for i in range(len(HH_re_list)):
+                HH_re = HH_re_list[i]
+                HH_merged = HH_merged_list[i]
+                for j in range(len(XXX_re_list)):
+                    XXX_re = XXX_re_list[j]
+                    XXX_merged = XXX_merged_list[j]
+
+                    re_pattern = fn_template.format(model=model, HH=HH_re, XXX=XXX_re)
+                    pattern = re.compile(re_pattern)
+                    data_folder_path = os.path.join(input_base_path, model)
+                    if os.path.exists(data_folder_path):
+                        folder_content_list = os.listdir(data_folder_path)
+                        fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
+                        if len(fn_list) == 0:
+                            continue
+                        fn_list.sort()
+                        fn_merged = fn_template.format(model=model, HH=HH_merged, XXX=XXX_merged)
+                        fn_merged_path = os.path.join(output_base_path, model, fn_merged)
+                        ncrcat_cmd.append("-o")
+                        ncrcat_cmd.append(fn_merged_path)
+                        for fn in fn_list:
+                            fn_path = os.path.join(data_folder_path, fn)
+                            ncrcat_cmd.append(fn_path)
+                        proc = subprocess.Popen(ncrcat_cmd,
+                                                stdin=subprocess.PIPE,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                )
+                        stdout, stderr = proc.communicate()
+                        pass
+    pass
+
 if __name__ == "__main__":
 
     netcdf_folder_path = "./sampleFiles_nwm_v11"
@@ -191,9 +283,12 @@ if __name__ == "__main__":
     template_folder_path = "./netcdf_templates"
     template_version = "v1.1"
 
+    merge_netcdf(input_base_path=os.path.join(output_folder_path, "fc01c453-ca09-4edc-aba6-5cc39784d4dd", "nwm.20160528"))
+
     simulation_date_list = ["20160528"]
     data_type_list = ["forecast", 'forcing']
     model_type_list = ["medium_range", 'analysis_assim', 'short_range', 'long_range']
+    #model_type_list = ['long_range']
     file_type_list = ["reservoir", 'channel', 'land']
 
     grid = {}
@@ -620,26 +715,35 @@ if __name__ == "__main__":
                   948091046, 948091045]
     reservoir_comid_list = [120051930, 1214501, 10814778, 14596315, 10816386, 4876219, 3906255, 4875263, 4876263, 4899751, 10375440, 10091800, 10408798, 10329965, 5302091, 1200014, 3501837, 11975087, 11965847, 11979229, 1392281, 10276260, 10091588, 10273702]
 
+    if "long_range" in model_type_list:
+        model_type_list.remove("long_range")
+        for i in range(1, 5):
+            model_type_list.append("long_range_mem{0}".format(str(i)))
+
     subset_work_dict = {'simulation_date': simulation_date_list,
                         'date_type': data_type_list,
                         'model_type': model_type_list,
                         'file_type':  file_type_list
                         }
 
+    job_id = str(uuid.uuid4())
+    print "job id: {0}".format(job_id)
     for simulation_date in subset_work_dict["simulation_date"]:
         for data_type in subset_work_dict["date_type"]:
             for model_type in subset_work_dict["model_type"]:
                 data_type_list_copy = subset_work_dict['file_type']
                 if data_type == "forcing":
                     data_type_list_copy = [None]
-                    if model_type == "long_range":
+                    if "long_range" in model_type:
+                        # long_range has no dedicated forcing files
                         continue
                 for file_type in data_type_list_copy:
                     try:
                         comid_list = stream_comid_list
                         if 'reservoir' == file_type:
                             comid_list = reservoir_comid_list
-                        subset_nwm_netcdf(grid=grid,
+                        subset_nwm_netcdf(job_id=job_id,
+                                          grid=grid,
                                           comid_list=comid_list,
                                           simulation_date=simulation_date,
                                           data_type=data_type,
