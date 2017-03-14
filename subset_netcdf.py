@@ -5,9 +5,27 @@ import logging
 import uuid
 import re
 import copy
+import datetime
+
+# create logger with 'spam_application'
+logger = logging.getLogger('subset_netcdf')
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('subset_netcdf.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 
-logging.basicConfig(level=logging.WARNING)
+#logging.basicConfig(level=logging.WARNING)
 
 from subsetting_lib import subset_grid_file, subset_comid_file
 
@@ -58,14 +76,17 @@ def subset_nwm_netcdf(job_id=None,
     var_list = []
     if data_type == "forcing":
         if model_type == "analysis_assim":
-            template_filename = "nwm.tHHz.forcing_analysis_assim.tm00.conus.cdl_template"
+            #template_filename = "nwm.tHHz.forcing_analysis_assim.tm00.conus.cdl_template"
+            template_filename = "nwm.tHHz.analysis_assim.forcing.tm00.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
         elif model_type == "short_range":
-            template_filename = "nwm.tHHz.forcing_short_range.fXXX.conus.cdl_template"
+            #template_filename = "nwm.tHHz.forcing_short_range.fXXX.conus.cdl_template"
+            template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
             var_list.append(["XXX", range(1, 19)])  # 001, 0002 ... 018
         elif model_type == "medium_range":
-            template_filename = "nwm.tHHz.forcing_medium_range.fXXX.conus.cdl_template"
+            #template_filename = "nwm.tHHz.forcing_medium_range.fXXX.conus.cdl_template"
+            template_filename = "nwm.tHHz.medium_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
             var_list.append(["XXX", range(1, 241)])  # 001, 002, .... 240
         elif model_type == "long_range":
@@ -99,7 +120,7 @@ def subset_nwm_netcdf(job_id=None,
 
         elif model_type == "medium_range":
             var_list.append(["HH", range(0, 19, 6)])  # 00, 06, ... 18
-            var_list.append(["XXX", range(3, 243, 3)])  # 003, 006, 009, ... 240
+            var_list.append(["XXX", range(3, 241, 3)])  # 003, 006, 009, ... 240
 
             if file_type == "channel":
                 template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
@@ -177,13 +198,13 @@ def subset_nwm_netcdf(job_id=None,
         in_nc_file = os.path.join(in_nc_folder_path,
                                   in_nc_filename)
         if not os.path.isfile(in_nc_file):
-            logging.info("Original netcdf missing @: {0}".format(in_nc_file))
+            logger.info("Original netcdf missing @: {0}".format(in_nc_file))
             # skip this netcdf as its original file is missing
             continue
 
         cdl_file = os.path.join(out_nc_folder_path, cdl_filename)
         if os.path.isfile(cdl_file):
-                logging.warn("Overwriting cdl file @: {0}".format(cdl_file))
+                logger.warn("Overwriting cdl file @: {0}".format(cdl_file))
         shutil.copyfile(template_file, cdl_file)
 
         content_list = []
@@ -200,7 +221,7 @@ def subset_nwm_netcdf(job_id=None,
         render_cdl_file(content_list=content_list, file_path=cdl_file)
 
         if os.path.isfile(out_nc_file):
-                logging.warn("Overwriting nc file @: {0}".format(out_nc_file))
+                logger.warn("Overwriting nc file @: {0}".format(out_nc_file))
         if not os.path.exists(out_nc_folder_path):
             os.makedirs(out_nc_folder_path)
         create_nc_from_cdf(cdl_file=cdl_file, out_file=out_nc_file)
@@ -230,16 +251,21 @@ def merge_netcdf(input_base_path=None, output_base_path=None):
     for model in folder_list:
         ncrcat_cmd = copy.copy(ncrcat_cmd_base)
         if "forcing_" in model:
-
             if "analysis_assim" in model:
-                fn_template = "nwm.t{HH}z.{model}.tm{XXX}.conus.nc"
+                fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
                 HH_re_list = ["\d\d"]
                 HH_merged_list = ["ALL"]
                 XXX_re_list = ["00"]
                 XXX_merged_list = ["00"]
             elif "short_range" in model:
-                fn_template = "nwm.t{HH}z.{model}.f{XXX}.conus.nc"
+                fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
                 HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
+                HH_merged_list = HH_re_list
+                XXX_re_list = ["\d\d\d"]
+                XXX_merged_list = ["ALL"]
+            elif "medium_range" in model:
+                fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
+                HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
                 HH_merged_list = HH_re_list
                 XXX_re_list = ["\d\d\d"]
                 XXX_merged_list = ["ALL"]
@@ -251,7 +277,7 @@ def merge_netcdf(input_base_path=None, output_base_path=None):
                     XXX_re = XXX_re_list[j]
                     XXX_merged = XXX_merged_list[j]
 
-                    re_pattern = fn_template.format(model=model, HH=HH_re, XXX=XXX_re)
+                    re_pattern = fn_template.format(HH=HH_re, XXX=XXX_re)
                     pattern = re.compile(re_pattern)
                     data_folder_path = os.path.join(input_base_path, model)
                     if os.path.exists(data_folder_path):
@@ -260,7 +286,7 @@ def merge_netcdf(input_base_path=None, output_base_path=None):
                         if len(fn_list) == 0:
                             continue
                         fn_list.sort()
-                        fn_merged = fn_template.format(model=model, HH=HH_merged, XXX=XXX_merged)
+                        fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)
                         fn_merged_path = os.path.join(output_base_path, model, fn_merged)
                         ncrcat_cmd.append("-o")
                         ncrcat_cmd.append(fn_merged_path)
@@ -278,17 +304,23 @@ def merge_netcdf(input_base_path=None, output_base_path=None):
 
 if __name__ == "__main__":
 
-    netcdf_folder_path = "./sampleFiles_nwm_v11"
+    job_id = str(uuid.uuid4())
+    logger.error("---------------{0}----------------".format(job_id))
+    start_dt = datetime.datetime.now()
+    logger.error(start_dt)
+    #netcdf_folder_path = "./sampleFiles_nwm_v11"
+    netcdf_folder_path = "/media/sf_Shared_Folder/new_data/pub/data/nccf/com/nwm/para"
     output_folder_path = "./temp"
     template_folder_path = "./netcdf_templates"
     template_version = "v1.1"
 
-    merge_netcdf(input_base_path=os.path.join(output_folder_path, "fc01c453-ca09-4edc-aba6-5cc39784d4dd", "nwm.20160528"))
+    #merge_netcdf(input_base_path=os.path.join(output_folder_path, "a9073f61-5c91-468a-9a59-7034f3dc42a2", "nwm.20160528"))
 
-    simulation_date_list = ["20160528"]
+    simulation_date_list = ["20170312"]
     data_type_list = ["forecast", 'forcing']
+    #data_type_list = ['forcing']
     model_type_list = ["medium_range", 'analysis_assim', 'short_range', 'long_range']
-    #model_type_list = ['long_range']
+    #model_type_list = ['short_range']
     file_type_list = ["reservoir", 'channel', 'land']
 
     grid = {}
@@ -726,8 +758,7 @@ if __name__ == "__main__":
                         'file_type':  file_type_list
                         }
 
-    job_id = str(uuid.uuid4())
-    print "job id: {0}".format(job_id)
+
     for simulation_date in subset_work_dict["simulation_date"]:
         for data_type in subset_work_dict["date_type"]:
             for model_type in subset_work_dict["model_type"]:
@@ -753,10 +784,11 @@ if __name__ == "__main__":
                                           output_folder_path=output_folder_path,
                                           template_version=template_version)
                     except Exception as ex:
-                        logging.error(str(type(ex)) + ex.message)
+                        logger.error(str(type(ex)) + ex.message)
 
     # ncrcat -h file*.nc output.nc
-    print "Done"
-
-
-
+    end_dt = datetime.datetime.now()
+    logger.error(end_dt)
+    elapse_dt = end_dt - start_dt
+    logger.error(elapse_dt)
+    logger.error("Done")

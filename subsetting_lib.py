@@ -2,7 +2,9 @@ import netCDF4
 import copy
 import os
 import numpy
+import logging
 
+logger = logging.getLogger('subset_netcdf')
 
 def subset_grid_file(in_nc_file=None, out_nc_file=None, grid_dict=None,
                      template_version="v1.1", netcdf_format="NETCDF4_CLASSIC"):
@@ -54,10 +56,9 @@ def subset_grid_file(in_nc_file=None, out_nc_file=None, grid_dict=None,
                     else:
                         if len(var_obj.dimensions) > 0:
                             var_obj[:] = in_nc.variables[name][:]
-
     except Exception as ex:
-        print ex.message
-        raise
+        logger.exception(ex.message + in_nc_file)
+
 
 
 def _get_comid_indices(find_comids, all_comids):
@@ -97,7 +98,6 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None,
                             var_obj[:] = in_nc.variables[name][index_list]
                     else:
                         var_obj[:] = in_nc.variables[name][:]
-
     except Exception as ex:
-        print ex.message
+        logger.exception(ex.message + in_nc_file)
 
