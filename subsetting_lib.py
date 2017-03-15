@@ -1,8 +1,10 @@
 import netCDF4
-import copy
 import os
 import numpy
 import logging
+import re
+import copy
+import subprocess
 
 logger = logging.getLogger('subset_netcdf')
 
@@ -101,3 +103,128 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None,
     except Exception as ex:
         logger.exception(ex.message + in_nc_file)
 
+
+def merge_netcdf(input_base_path=None, output_base_path=None):
+
+    output_base_path = input_base_path
+    folder_list = ["forcing_analysis_assim", "forcing_short_range", "forcing_medium_range",
+                   "analysis_assim", "short_range", "medium_range",
+                   "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
+
+    file_type_list = ["channel", "reservoir", "land"]
+    ncrcat_cmd_base = ["ncrcat", "-h"]
+    for model in folder_list:
+            ncrcat_cmd = copy.copy(ncrcat_cmd_base)
+            if "forcing_" in model:
+                if "analysis_assim" in model:
+                    fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
+                    HH_re_list = ["\d\d"]
+                    HH_merged_list = ["ALL"]
+                    XXX_re_list = ["00"]
+                    XXX_merged_list = ["00"]
+                elif "short_range" in model:
+                    fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
+                    HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
+                    HH_merged_list = HH_re_list
+                    XXX_re_list = ["\d\d\d"]
+                    XXX_merged_list = ["ALL"]
+                elif "medium_range" in model:
+                    fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
+                    HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                    HH_merged_list = HH_re_list
+                    XXX_re_list = ["\d\d\d"]
+                    XXX_merged_list = ["ALL"]
+            else:
+                for file_type in file_type_list:
+                    if "analysis_assim" in model:
+                        HH_re_list = ["\d\d"]
+                        HH_merged_list = ["ALL"]
+                        XXX_re_list = ["00"]
+                        XXX_merged_list = ["00"]
+
+                        if file_type == "channel":
+                            fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.cdl_template"
+                        elif file_type == "land":
+                            fn_template = "nwm.t{HH}z.analysis_assim.land.tm{XXX}.conus.cdl_template"
+                        elif file_type == "reservoir":
+                            fn_template = "nwm.t{HH}z.analysis_assim.reservoir.tm{XXX}.conus.cdl_template"
+                        elif file_type == "terrain":
+                            raise NotImplementedError()
+                    elif "short_range" in model:
+                        HH_re_list = ["\d\d"]
+                        HH_merged_list = [str(i).zfill(2) for i in range(0, 24)]
+                        XXX_re_list = ["\d\d\d"]
+                        XXX_merged_list = ["ALL"]
+
+                        if file_type == "channel":
+                            fn_template = "nwm.t{HH}z.short_range.channel_rt.tm{XXX}.conus.cdl_template"
+                        elif file_type == "land":
+                            fn_template = "nwm.t{HH}z.short_range.land.tm{XXX}.conus.cdl_template"
+                        elif file_type == "reservoir":
+                            fn_template = "nwm.t{HH}z.short_range.reservoir.tm{XXX}.conus.cdl_template"
+                        elif file_type == "terrain":
+                            raise NotImplementedError()
+                    elif "medium_range" in model:
+                        HH_re_list = ["\d\d"]
+                        HH_merged_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                        XXX_re_list = ["\d\d\d"]
+                        XXX_merged_list = ["ALL"]
+
+                        if file_type == "channel":
+                            fn_template = "nwm.t{HH}z.medium_range.channel_rt.tm{XXX}.conus.cdl_template"
+                        elif file_type == "land":
+                            fn_template = "nwm.t{HH}z.medium_range.land.tm{XXX}.conus.cdl_template"
+                        elif file_type == "reservoir":
+                            fn_template = "nwm.t{HH}z.medium_range.reservoir.tm{XXX}.conus.cdl_template"
+                        elif file_type == "terrain":
+                            raise NotImplementedError()
+                    elif "long_range_mem" in model:
+                        mem_id = int(model[-1])
+                        HH_re_list = ["\d\d"]
+                        HH_merged_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                        XXX_re_list = ["\d\d\d"]
+                        XXX_merged_list = ["ALL"]
+
+                        if file_type == "channel":
+                            fn_template = "nwm.t{HH}z.medium_range.channel_rt_{mem_id}.tm{XXX}.conus.cdl_template".format(mem_id=mem_id)
+                        elif file_type == "land":
+                            fn_template = "nwm.t{HH}z.medium_range.land_{mem_id}.tm{XXX}.conus.cdl_template".format(mem_id=mem_id)
+                        elif file_type == "reservoir":
+                            fn_template = "nwm.t{HH}z.medium_range.reservoir_{mem_id}.tm{XXX}.conus.cdl_template".format(mem_id=mem_id)
+                        elif file_type == "terrain":
+                            raise NotImplementedError()
+    for i in range(len(HH_re_list)):
+        HH_re = HH_re_list[i]
+        HH_merged = HH_merged_list[i]
+        for j in range(len(XXX_re_list)):
+            XXX_re = XXX_re_list[j]
+            XXX_merged = XXX_merged_list[j]
+
+            re_pattern = fn_template.format(HH=HH_re, XXX=XXX_re)
+            pattern = re.compile(re_pattern)
+            data_folder_path = os.path.join(input_base_path, model)
+            if os.path.exists(data_folder_path):
+                folder_content_list = os.listdir(data_folder_path)
+                fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
+                if len(fn_list) == 0:
+                    continue
+                fn_list.sort()
+                fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)
+                fn_merged_path = os.path.join(output_base_path, model, fn_merged)
+                ncrcat_cmd.append("-o")
+                ncrcat_cmd.append(fn_merged_path)
+                for fn in fn_list:
+                    fn_path = os.path.join(data_folder_path, fn)
+                    ncrcat_cmd.append(fn_path)
+                try:
+                    proc = subprocess.Popen(ncrcat_cmd,
+                                            stdin=subprocess.PIPE,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            )
+                    stdout, stderr = proc.communicate()
+                except Exception as ex:
+                    logger.error(ex.message)
+                    logger.error(str(ncrcat_cmd))
+                pass
+    pass

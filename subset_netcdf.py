@@ -3,11 +3,9 @@ import shutil
 import os
 import logging
 import uuid
-import re
-import copy
 import datetime
 
-# create logger with 'spam_application'
+# create logger with 'subset_netcdf'
 logger = logging.getLogger('subset_netcdf')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
@@ -25,9 +23,7 @@ logger.addHandler(fh)
 logger.addHandler(ch)
 
 
-#logging.basicConfig(level=logging.WARNING)
-
-from subsetting_lib import subset_grid_file, subset_comid_file
+from subsetting_lib import subset_grid_file, subset_comid_file, merge_netcdf
 
 
 def render_cdl_file(content_list=[], file_path=None):
@@ -55,7 +51,8 @@ def subset_nwm_netcdf(job_id=None,
                       file_type=None,
                       input_folder_path=None,
                       output_folder_path=None,
-                      template_version="v1.1"):
+                      template_version="v1.1",
+                      write_file_list=None):
 
     if job_id is None:
         job_id = ""
@@ -136,13 +133,15 @@ def subset_nwm_netcdf(job_id=None,
             if mem_id in [1, 2, 3, 4]:
                 var_list.append(["M", [mem_id]])  # 1, 2, 3, 4
                 var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
-                var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
 
                 if file_type == "channel":
+                    var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
                     template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
                 elif file_type == "land":
+                    var_list.append(["XXX", range(24, 721, 24)])  # 024, 048, ... 720
                     template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
                 elif file_type == "reservoir":
+                    var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
                     template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
                 elif file_type == "terrain":
                     raise NotImplementedError()
@@ -178,12 +177,34 @@ def subset_nwm_netcdf(job_id=None,
                 cdl_filename_list_new.append(cld_new)
         cdl_filename_list = cdl_filename_list_new
 
+    if type(write_file_list) is dict:
+        url_base = write_file_list["url_base"] + "nwm.$simulation_date/"
+        save_to_path_base = os.path.join(write_file_list["save_to_path_base"],
+                                         "nwm.simulation_date")
+        # -nc: do not download file if it already exists on disk
+        wget_cmd_template = "wget -nc -P {save_to_folder_path} {url}"
+        write_file_list_path = "./file_list_{0}.txt".format(job_id)
+        with open(write_file_list_path, "a+") as f:
+            if os.path.getsize(write_file_list_path) == 0:
+                f.write("simulation_date={simulation_date}\n".format(simulation_date=simulation_date))
+            for cdl_filename in cdl_filename_list:
+                save_to_folder_path = os.path.join(save_to_path_base, model_type)
+                url = url_base + model_type + "/" + cdl_filename.replace(".cdl", ".nc")
+                if data_type == "forcing":
+                    save_to_folder_path = os.path.join(save_to_path_base, data_type + "_" + model_type)
+                    url = url_base + data_type + "_" + model_type + "/" + cdl_filename.replace(".cdl", ".nc")
+                save_to_folder_path = save_to_folder_path.replace("simulation_date", "$simulation_date")
+                wget_cmd = wget_cmd_template.format(save_to_folder_path=save_to_folder_path, url=url)
+                f.write(wget_cmd + "\n")
+        logger.error("file list written to {0}".format(write_file_list_path))
+        return
+
     simulation_date = "nwm." + simulation_date
     out_nc_folder_path = os.path.join(output_folder_path, simulation_date, model_type)
     in_nc_folder_path = os.path.join(input_folder_path, simulation_date, model_type)
     if data_type == "forcing":
-        out_nc_folder_path = os.path.join(output_folder_path, simulation_date, data_type + "_" +model_type)
-        in_nc_folder_path = os.path.join(input_folder_path, simulation_date, data_type + "_" +model_type)
+        out_nc_folder_path = os.path.join(output_folder_path, simulation_date, data_type + "_" + model_type)
+        in_nc_folder_path = os.path.join(input_folder_path, simulation_date, data_type + "_" + model_type)
 
     if not os.path.exists(out_nc_folder_path):
         os.makedirs(out_nc_folder_path)
@@ -240,67 +261,7 @@ def subset_nwm_netcdf(job_id=None,
                               comid_list=comid_list)
 
 
-def merge_netcdf(input_base_path=None, output_base_path=None):
 
-    output_base_path = input_base_path
-    folder_list = ["forcing_analysis_assim", "forcing_short_range", "forcing_medium_range",
-                   "analysis_assim", "short_range", "medium_range",
-                   "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
-
-    ncrcat_cmd_base = ["ncrcat", "-h"]
-    for model in folder_list:
-        ncrcat_cmd = copy.copy(ncrcat_cmd_base)
-        if "forcing_" in model:
-            if "analysis_assim" in model:
-                fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
-                HH_re_list = ["\d\d"]
-                HH_merged_list = ["ALL"]
-                XXX_re_list = ["00"]
-                XXX_merged_list = ["00"]
-            elif "short_range" in model:
-                fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
-                HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
-                HH_merged_list = HH_re_list
-                XXX_re_list = ["\d\d\d"]
-                XXX_merged_list = ["ALL"]
-            elif "medium_range" in model:
-                fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
-                HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                HH_merged_list = HH_re_list
-                XXX_re_list = ["\d\d\d"]
-                XXX_merged_list = ["ALL"]
-
-            for i in range(len(HH_re_list)):
-                HH_re = HH_re_list[i]
-                HH_merged = HH_merged_list[i]
-                for j in range(len(XXX_re_list)):
-                    XXX_re = XXX_re_list[j]
-                    XXX_merged = XXX_merged_list[j]
-
-                    re_pattern = fn_template.format(HH=HH_re, XXX=XXX_re)
-                    pattern = re.compile(re_pattern)
-                    data_folder_path = os.path.join(input_base_path, model)
-                    if os.path.exists(data_folder_path):
-                        folder_content_list = os.listdir(data_folder_path)
-                        fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
-                        if len(fn_list) == 0:
-                            continue
-                        fn_list.sort()
-                        fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)
-                        fn_merged_path = os.path.join(output_base_path, model, fn_merged)
-                        ncrcat_cmd.append("-o")
-                        ncrcat_cmd.append(fn_merged_path)
-                        for fn in fn_list:
-                            fn_path = os.path.join(data_folder_path, fn)
-                            ncrcat_cmd.append(fn_path)
-                        proc = subprocess.Popen(ncrcat_cmd,
-                                                stdin=subprocess.PIPE,
-                                                stdout=subprocess.PIPE,
-                                                stderr=subprocess.PIPE,
-                                                )
-                        stdout, stderr = proc.communicate()
-                        pass
-    pass
 
 if __name__ == "__main__":
 
@@ -314,14 +275,15 @@ if __name__ == "__main__":
     template_folder_path = "./netcdf_templates"
     template_version = "v1.1"
 
-    #merge_netcdf(input_base_path=os.path.join(output_folder_path, "a9073f61-5c91-468a-9a59-7034f3dc42a2", "nwm.20160528"))
+    merge_netcdf(input_base_path=os.path.join(output_folder_path, "050477ce-d9f4-44f7-8a42-14e61cc218cb", "nwm.20170312"))
 
+    exit()
     simulation_date_list = ["20170312"]
-    data_type_list = ["forecast", 'forcing']
+    data_type_list = ['forcing', "forecast"]
     #data_type_list = ['forcing']
-    model_type_list = ["medium_range", 'analysis_assim', 'short_range', 'long_range']
+    model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
     #model_type_list = ['short_range']
-    file_type_list = ["reservoir", 'channel', 'land']
+    file_type_list = ['channel', 'reservoir', 'land']
 
     grid = {}
     grid["minX"] = 837
@@ -757,7 +719,9 @@ if __name__ == "__main__":
                         'model_type': model_type_list,
                         'file_type':  file_type_list
                         }
-
+    write_file_list = None
+    # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
+    #                    "save_to_path_base": "/projects/water/nwm/new_data/pub/data/nccf/com/nwm/para/"}
 
     for simulation_date in subset_work_dict["simulation_date"]:
         for data_type in subset_work_dict["date_type"]:
@@ -782,7 +746,8 @@ if __name__ == "__main__":
                                           file_type=file_type,
                                           input_folder_path=netcdf_folder_path,
                                           output_folder_path=output_folder_path,
-                                          template_version=template_version)
+                                          template_version=template_version,
+                                          write_file_list=write_file_list)
                     except Exception as ex:
                         logger.error(str(type(ex)) + ex.message)
 
@@ -791,4 +756,4 @@ if __name__ == "__main__":
     logger.error(end_dt)
     elapse_dt = end_dt - start_dt
     logger.error(elapse_dt)
-    logger.error("Done")
+    logger.error("---------------------Done-----------------------------")
