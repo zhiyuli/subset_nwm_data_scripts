@@ -5,11 +5,13 @@ import logging
 import uuid
 import datetime
 
+job_id = str(uuid.uuid4())
+
 # create logger with 'subset_netcdf'
 logger = logging.getLogger('subset_netcdf')
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
-fh = logging.FileHandler('subset_netcdf.log')
+fh = logging.FileHandler('subset_netcdf_{job_id}.log'.format(job_id=job_id))
 fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
@@ -32,12 +34,41 @@ def render_cdl_file(content_list=[], file_path=None):
 
 
 def replace_text_in_file(search_text=None, replace_text=None, file_path=None):
-    subprocess.call(['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path])
+    # subprocess.call(['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path])
+    sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
+    proc = subprocess.Popen(sed_cmd,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            )
+    proc.wait()
+    stdout, stderr = proc.communicate()
+    if stdout:
+        logger.error(stdout)
+        raise Exception(" replace_text_in_file() error @ {0}".format(file_path))
+    if stderr:
+        logger.error(stderr)
+        raise Exception(" replace_text_in_file() error @ {0}".format(file_path))
 
 
 def create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True):
     # -7: netcdf-4 classic model
-    subprocess.call(['ncgen', '-7', '-o', out_file, cdl_file])
+    # subprocess.call(['ncgen', '-7', '-o', out_file, cdl_file])
+    ncgen_cmd = ['ncgen', '-7', '-o', out_file, cdl_file]
+    proc = subprocess.Popen(ncgen_cmd,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            )
+    proc.wait()
+    stdout, stderr = proc.communicate()
+    if stdout:
+        logger.error(stdout)
+        raise Exception(" create_nc_from_cdf() error @ {0}".format(cdl_file))
+    if stderr:
+        logger.error(stderr)
+        raise Exception(" create_nc_from_cdf() error @ {0}".format(cdl_file))
+
     if remove_cdl:
         os.remove(cdl_file)
 
@@ -163,20 +194,47 @@ def subset_nwm_netcdf(job_id=None,
         raise Exception("template file missing @: {0}".format(template_file))
 
     cdl_filename = template_filename[0:template_filename.rfind("_template")]
+    nc_template_file_name = cdl_filename.replace(".cdl", ".nc")
+    out_nc_folder_template_path = os.path.join(output_folder_path, "nc_template")
+    nc_template_file_path = os.path.join(out_nc_folder_template_path, nc_template_file_name)
 
-    cdl_filename_list = [cdl_filename]
+    # render a template nc file and put under output folder
+    if not os.path.isfile(nc_template_file_path):
+        if not os.path.exists(out_nc_folder_template_path):
+            os.makedirs(out_nc_folder_template_path)
+        cdl_file_path = os.path.join(out_nc_folder_template_path, cdl_filename)
+        shutil.copyfile(template_file, cdl_file_path)
+
+        content_list = []
+        if data_type == "forecast" and file_type in ["channel", "reservoir"]:
+            content_list.append(["{%feature_id%}", str(len(comid_list))])
+        elif data_type == "forcing" or \
+                (data_type == "forecast" and file_type in ["land"]):
+            content_list.append(["{%x%}", str(dim_x_len)])
+            content_list.append(["{%y%}", str(dim_y_len)])
+
+        content_list.append(["{%filename%}", nc_template_file_name])
+        content_list.append(["{%model_initialization_time%}", "2020-01-01_00:00:00"])
+        content_list.append(["{%model_output_valid_time%}", "2020-01-01_00:00:00"])
+
+        render_cdl_file(content_list=content_list, file_path=cdl_file_path)
+        create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
+
+    nc_file_name = nc_template_file_name
+    nc_filename_list = [nc_file_name]
     for var in var_list:
         var_name = var[0]
         var_range = var[1]
-        cdl_filename_list_new = []
-        for cdl in cdl_filename_list:
+        nc_filename_list_new = []
+        for nc in nc_filename_list:
             for var_value in var_range:
                 var_value_str = str(var_value).zfill(len(var_name))
-                cld_new = cdl
-                cld_new = cld_new.replace(var_name, var_value_str)
-                cdl_filename_list_new.append(cld_new)
-        cdl_filename_list = cdl_filename_list_new
+                nc_new = nc
+                nc_new = nc_new.replace(var_name, var_value_str)
+                nc_filename_list_new.append(nc_new)
+        nc_filename_list = nc_filename_list_new
 
+    # write wget download list file
     if type(write_file_list) is dict:
         url_base = write_file_list["url_base"] + "nwm.$simulation_date/"
         save_to_path_base = os.path.join(write_file_list["save_to_path_base"],
@@ -187,12 +245,12 @@ def subset_nwm_netcdf(job_id=None,
         with open(write_file_list_path, "a+") as f:
             if os.path.getsize(write_file_list_path) == 0:
                 f.write("simulation_date={simulation_date}\n".format(simulation_date=simulation_date))
-            for cdl_filename in cdl_filename_list:
+            for nc_filename in nc_filename_list:
                 save_to_folder_path = os.path.join(save_to_path_base, model_type)
-                url = url_base + model_type + "/" + cdl_filename.replace(".cdl", ".nc")
+                url = url_base + model_type + "/" + nc_filename
                 if data_type == "forcing":
                     save_to_folder_path = os.path.join(save_to_path_base, data_type + "_" + model_type)
-                    url = url_base + data_type + "_" + model_type + "/" + cdl_filename.replace(".cdl", ".nc")
+                    url = url_base + data_type + "_" + model_type + "/" + nc_filename
                 save_to_folder_path = save_to_folder_path.replace("simulation_date", "$simulation_date")
                 wget_cmd = wget_cmd_template.format(save_to_folder_path=save_to_folder_path, url=url)
                 f.write(wget_cmd + "\n")
@@ -209,43 +267,17 @@ def subset_nwm_netcdf(job_id=None,
     if not os.path.exists(out_nc_folder_path):
         os.makedirs(out_nc_folder_path)
 
-    for cdl_filename in cdl_filename_list:
-
-        out_nc_filename = cdl_filename.replace(".cdl", ".nc")
-        out_nc_file = os.path.join(out_nc_folder_path, out_nc_filename)
-
-        # check if input file does not exist, skip creating empty netcdf and remove cdl
-        in_nc_filename = out_nc_filename
-        in_nc_file = os.path.join(in_nc_folder_path,
-                                  in_nc_filename)
+    for nc_filename in nc_filename_list:
+        out_nc_file = os.path.join(out_nc_folder_path, nc_filename)
+        in_nc_file = os.path.join(in_nc_folder_path, nc_filename)
         if not os.path.isfile(in_nc_file):
             logger.info("Original netcdf missing @: {0}".format(in_nc_file))
             # skip this netcdf as its original file is missing
             continue
 
-        cdl_file = os.path.join(out_nc_folder_path, cdl_filename)
-        if os.path.isfile(cdl_file):
-                logger.warn("Overwriting cdl file @: {0}".format(cdl_file))
-        shutil.copyfile(template_file, cdl_file)
-
-        content_list = []
-        if data_type == "forecast" and file_type in ["channel", "reservoir"]:
-            content_list.append(["{%feature_id%}", str(len(comid_list))])
-        elif data_type == "forcing" or \
-                (data_type == "forecast" and file_type in ["land"]):
-            content_list.append(["{%x%}", str(dim_x_len)])
-            content_list.append(["{%y%}", str(dim_y_len)])
-
-        content_list.append(["{%filename%}", cdl_filename[:-4]])
-        content_list.append(["{%model_initialization_time%}", "2020-01-01_00:00:00"])
-        content_list.append(["{%model_output_valid_time%}", "2020-01-01_00:00:00"])
-        render_cdl_file(content_list=content_list, file_path=cdl_file)
-
         if os.path.isfile(out_nc_file):
-                logger.warn("Overwriting nc file @: {0}".format(out_nc_file))
-        if not os.path.exists(out_nc_folder_path):
-            os.makedirs(out_nc_folder_path)
-        create_nc_from_cdf(cdl_file=cdl_file, out_file=out_nc_file)
+                logger.warn("Overwriting existing nc file @: {0}".format(out_nc_file))
+        shutil.copyfile(nc_template_file_path, out_nc_file)
 
         if data_type == "forcing" or \
            data_type == "forecast" and file_type == "land":
@@ -261,24 +293,21 @@ def subset_nwm_netcdf(job_id=None,
                               comid_list=comid_list)
 
 
-
-
 if __name__ == "__main__":
 
-    job_id = str(uuid.uuid4())
     logger.error("---------------{0}----------------".format(job_id))
     start_dt = datetime.datetime.now()
     logger.error(start_dt)
     #netcdf_folder_path = "./sampleFiles_nwm_v11"
-    netcdf_folder_path = "/media/sf_Shared_Folder/new_data/pub/data/nccf/com/nwm/para"
+    netcdf_folder_path = "/media/sf_Shared_Folder/new_data"
     output_folder_path = "./temp"
     template_folder_path = "./netcdf_templates"
     template_version = "v1.1"
 
-    merge_netcdf(input_base_path=os.path.join(output_folder_path, "050477ce-d9f4-44f7-8a42-14e61cc218cb", "nwm.20170312"))
+    #merge_netcdf(input_base_path=os.path.join(output_folder_path, "ee6a1fc2-099c-40f4-9f9f-9bb9b1e458f2", "nwm.20170312"))
+    #exit()
 
-    exit()
-    simulation_date_list = ["20170312"]
+    simulation_date_list = ["20170319"]
     data_type_list = ['forcing', "forecast"]
     #data_type_list = ['forcing']
     model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
@@ -721,7 +750,10 @@ if __name__ == "__main__":
                         }
     write_file_list = None
     # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
-    #                    "save_to_path_base": "/projects/water/nwm/new_data/pub/data/nccf/com/nwm/para/"}
+    #                     "save_to_path_base": "/projects/water/nwm/new_data/pub/data/nccf/com/nwm/para/"}
+    # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
+    #                    "save_to_path_base": "/cygdrive/f/nwm_new_data/"}
+
 
     for simulation_date in subset_work_dict["simulation_date"]:
         for data_type in subset_work_dict["date_type"]:
