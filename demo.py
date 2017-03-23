@@ -83,16 +83,19 @@ if __name__ == "__main__":
             raise Exception("Failed to retrieve spatial query result")
 
         #############################################################################################33
-        netcdf_folder_path = "/media/sf_Shared_Folder/new_data"
+        netcdf_folder_path = "/media/sf_nwm_new_data"
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
         template_version = "v1.1"
-        merge_netcdfs = False
+        merge_netcdfs = True
         cleanup = True
-        simulation_date_list = ["20170319"]
+        simulation_date_list = ["20170322"]
         data_type_list = ['forcing', "forecast"]
+        #data_type_list = ["forecast"]
         model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_type_list = ['analysis_assim', 'medium_range']
         file_type_list = ['channel', 'reservoir', 'land']
+        #file_type_list = ['channel', 'reservoir']
 
         write_file_list = None
         # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",

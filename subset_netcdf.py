@@ -3,6 +3,7 @@ import shutil
 import os
 import logging
 import datetime
+import platform
 from subsetting_lib import subset_grid_file, subset_comid_file, merge_netcdf
 
 logger = logging.getLogger('subset_netcdf')
@@ -15,7 +16,12 @@ def render_cdl_file(content_list=[], file_path=None):
 
 def replace_text_in_file(search_text=None, replace_text=None, file_path=None):
     # subprocess.call(['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path])
-    sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
+    if "windows" in platform.system().lower():
+        sed_cmd = ['.\\dependencies\\sed_win\\sed.exe', "-i", "s/{0}/{1}/g".format(search_text, replace_text), file_path]
+    elif "linux" in platform.system().lower():
+        sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
+    else:
+        raise Exception("Unsupported OS")
     proc = subprocess.Popen(sed_cmd,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
@@ -87,14 +93,14 @@ def subset_nwm_netcdf(job_id=None,
     var_list = []
     if data_type == "forcing":
         if model_type == "analysis_assim":
-            template_filename = "nwm.tHHz.analysis_assim.forcing.tm00.conus.cdl_template"
+            cdl_template_filename = "nwm.tHHz.analysis_assim.forcing.tm00.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
         elif model_type == "short_range":
-            template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
+            cdl_template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
             var_list.append(["XXX", range(1, 19)])  # 001, 0002 ... 018
         elif model_type == "medium_range":
-            template_filename = "nwm.tHHz.medium_range.forcing.fXXX.conus.cdl_template"
+            cdl_template_filename = "nwm.tHHz.medium_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
             var_list.append(["XXX", range(1, 241)])  # 001, 002, .... 240
         elif model_type == "long_range":
@@ -105,11 +111,11 @@ def subset_nwm_netcdf(job_id=None,
             var_list.append(["HH", range(24)])  # 00, 01, 02...23
 
             if file_type == "channel":
-                template_filename = "nwm.tHHz.analysis_assim.channel_rt.tm00.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.analysis_assim.channel_rt.tm00.conus.cdl_template"
             elif file_type == "land":
-                template_filename = "nwm.tHHz.analysis_assim.land.tm00.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.analysis_assim.land.tm00.conus.cdl_template"
             elif file_type == "reservoir":
-                template_filename = "nwm.tHHz.analysis_assim.reservoir.tm00.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.analysis_assim.reservoir.tm00.conus.cdl_template"
             elif file_type == "terrain":
                 raise NotImplementedError()
 
@@ -118,11 +124,11 @@ def subset_nwm_netcdf(job_id=None,
             var_list.append(["XXX", range(1, 19)])  # 001, 002 ... 18
 
             if file_type == "channel":
-                template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
             elif file_type == "land":
-                template_filename = "nwm.tHHz.short_range.land.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.short_range.land.fXXX.conus.cdl_template"
             elif file_type == "reservoir":
-                template_filename = "nwm.tHHz.short_range.reservoir.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.short_range.reservoir.fXXX.conus.cdl_template"
             elif file_type == "terrain":
                 raise NotImplementedError()
 
@@ -131,11 +137,11 @@ def subset_nwm_netcdf(job_id=None,
             var_list.append(["XXX", range(3, 241, 3)])  # 003, 006, 009, ... 240
 
             if file_type == "channel":
-                template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
             elif file_type == "land":
-                template_filename = "nwm.tHHz.medium_range.land.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.medium_range.land.fXXX.conus.cdl_template"
             elif file_type == "reservoir":
-                template_filename = "nwm.tHHz.medium_range.reservoir.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.medium_range.reservoir.fXXX.conus.cdl_template"
             elif file_type == "terrain":
                 raise NotImplementedError()
 
@@ -147,13 +153,13 @@ def subset_nwm_netcdf(job_id=None,
 
                 if file_type == "channel":
                     var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
-                    template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
+                    cdl_template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
                 elif file_type == "land":
                     var_list.append(["XXX", range(24, 721, 24)])  # 024, 048, ... 720
-                    template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
+                    cdl_template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
                 elif file_type == "reservoir":
                     var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
-                    template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
+                    cdl_template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
                 elif file_type == "terrain":
                     raise NotImplementedError("terrain")
             else:
@@ -163,48 +169,48 @@ def subset_nwm_netcdf(job_id=None,
         raise Exception("invalid data_type: {0}".format(data_type))
 
     if use_merge_template:
-        template_filename += "_merge"
+        cdl_template_filename += "_merge"
     if "long_range_mem" in model_type:
         # long_range uses same templates for all mem1-mem4
-        template_file = os.path.join(template_folder_path, template_version,
-                                     data_type, "long_range", template_filename)
+        cdl_template_file_path = os.path.join(template_folder_path, template_version,
+                                     data_type, "long_range", cdl_template_filename)
     else:
-        template_file = os.path.join(template_folder_path, template_version,
-                                     data_type, model_type, template_filename)
+        cdl_template_file_path = os.path.join(template_folder_path, template_version,
+                                     data_type, model_type, cdl_template_filename)
 
-    if not os.path.isfile(template_file):
-        raise Exception("template file missing @: {0}".format(template_file))
+    if not os.path.isfile(cdl_template_file_path):
+        raise Exception("template file missing @: {0}".format(cdl_template_file_path))
 
-    cdl_filename = template_filename[0:template_filename.rfind("_template")]
+    cdl_filename = cdl_template_filename[0:cdl_template_filename.rfind("_template")]
     nc_template_file_name = cdl_filename.replace(".cdl", ".nc")
     out_nc_folder_template_path = os.path.join(output_folder_path, "nc_template")
     nc_template_file_path = os.path.join(out_nc_folder_template_path, nc_template_file_name)
 
-    # render a template nc file and put under output folder
-    if not os.path.isfile(nc_template_file_path):
-        if not os.path.exists(out_nc_folder_template_path):
-            os.makedirs(out_nc_folder_template_path)
-        cdl_file_path = os.path.join(out_nc_folder_template_path, cdl_filename)
-        shutil.copyfile(template_file, cdl_file_path)
-
-        content_list = []
-        if data_type == "forecast" and file_type in ["channel", "reservoir"]:
-            if file_type == "channel" and len(comid_list) == 0:
-                return
-            if file_type == "reservoir" and len(comid_list) == 0:
-                return
-            content_list.append(["{%feature_id%}", str(len(comid_list))])
-        elif data_type == "forcing" or \
-                (data_type == "forecast" and file_type in ["land"]):
-            content_list.append(["{%x%}", str(dim_x_len)])
-            content_list.append(["{%y%}", str(dim_y_len)])
-
-        content_list.append(["{%filename%}", nc_template_file_name])
-        content_list.append(["{%model_initialization_time%}", "2030-01-01_00:00:00"])
-        content_list.append(["{%model_output_valid_time%}", "2030-01-01_00:00:00"])
-
-        render_cdl_file(content_list=content_list, file_path=cdl_file_path)
-        create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
+    # # render a template nc file and put it under output folder
+    # if not os.path.isfile(nc_template_file_path):
+    #     if not os.path.exists(out_nc_folder_template_path):
+    #         os.makedirs(out_nc_folder_template_path)
+    #     cdl_file_path = os.path.join(out_nc_folder_template_path, cdl_filename)
+    #     shutil.copyfile(cdl_template_file_path, cdl_file_path)
+    #
+    #     content_list = []
+    #     if data_type == "forecast" and file_type in ["channel", "reservoir"]:
+    #         if file_type == "channel" and len(comid_list) == 0:
+    #             return
+    #         if file_type == "reservoir" and len(comid_list) == 0:
+    #             return
+    #         content_list.append(["{%feature_id%}", str(len(comid_list))])
+    #     elif data_type == "forcing" or \
+    #             (data_type == "forecast" and file_type in ["land"]):
+    #         content_list.append(["{%x%}", str(dim_x_len)])
+    #         content_list.append(["{%y%}", str(dim_y_len)])
+    #
+    #     content_list.append(["{%filename%}", nc_template_file_name])
+    #     content_list.append(["{%model_initialization_time%}", "2030-01-01_00:00:00"])
+    #     content_list.append(["{%model_output_valid_time%}", "2030-01-01_00:00:00"])
+    #
+    #     render_cdl_file(content_list=content_list, file_path=cdl_file_path)
+    #     create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
 
     nc_file_name = nc_template_file_name
     nc_filename_list = [nc_file_name]
@@ -260,12 +266,39 @@ def subset_nwm_netcdf(job_id=None,
         out_nc_file = os.path.join(out_nc_folder_path, nc_filename)
         in_nc_file = os.path.join(in_nc_folder_path, nc_filename)
         if not os.path.isfile(in_nc_file):
-            logger.debug("Original netcdf missing @: {0}".format(in_nc_file))
+            logger.warning("Original netcdf missing @: {0}".format(in_nc_file))
             # skip this netcdf as its original file is missing
             continue
 
         if os.path.isfile(out_nc_file):
-                logger.debug("Overwriting existing nc file @: {0}".format(out_nc_file))
+            logger.debug("Overwriting existing nc file @: {0}".format(out_nc_file))
+
+        # render a template nc file and put it under output folder
+        if not os.path.isfile(nc_template_file_path):
+            if not os.path.exists(out_nc_folder_template_path):
+                os.makedirs(out_nc_folder_template_path)
+            cdl_file_path = os.path.join(out_nc_folder_template_path, cdl_filename)
+            shutil.copyfile(cdl_template_file_path, cdl_file_path)
+
+            content_list = []
+            if data_type == "forecast" and file_type in ["channel", "reservoir"]:
+                if file_type == "channel" and len(comid_list) == 0:
+                    return
+                if file_type == "reservoir" and len(comid_list) == 0:
+                    return
+                content_list.append(["{%feature_id%}", str(len(comid_list))])
+            elif data_type == "forcing" or \
+                    (data_type == "forecast" and file_type in ["land"]):
+                content_list.append(["{%x%}", str(dim_x_len)])
+                content_list.append(["{%y%}", str(dim_y_len)])
+
+            content_list.append(["{%filename%}", nc_template_file_name])
+            content_list.append(["{%model_initialization_time%}", "2030-01-01_00:00:00"])
+            content_list.append(["{%model_output_valid_time%}", "2030-01-01_00:00:00"])
+
+            render_cdl_file(content_list=content_list, file_path=cdl_file_path)
+            create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
+
         shutil.copyfile(nc_template_file_path, out_nc_file)
 
         if data_type == "forcing" or \
@@ -298,21 +331,21 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
     start_dt = datetime.datetime.now()
     logger.info(start_dt)
 
-    logger.debug("job_id={0}".format(str(job_id)))
-    logger.debug("netcdf_folder_path={0}".format(str(netcdf_folder_path)))
-    logger.debug("output_folder_path={0}".format(str(output_folder_path)))
-    logger.debug("template_folder_path={0}".format(str(template_folder_path)))
-    logger.debug("simulation_date_list={0}".format(str(simulation_date_list)))
-    logger.debug("data_type_list={0}".format(str(data_type_list)))
-    logger.debug("model_type_list={0}".format(str(model_type_list)))
-    logger.debug("file_type_list={0}".format(str(file_type_list)))
-    logger.debug("grid_dict={0}".format(str(grid_dict)))
-    logger.debug("stream_comid_list={0}".format(str(stream_comid_list)))
-    logger.debug("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
-    logger.debug("merge_netcdfs={0}".format(str(merge_netcdfs)))
-    logger.debug("cleanup={0}".format(str(cleanup)))
-    logger.debug("write_file_list={0}".format(str(write_file_list)))
-    logger.debug("template_version={0}".format(str(template_version)))
+    logger.info("job_id={0}".format(str(job_id)))
+    logger.info("netcdf_folder_path={0}".format(str(netcdf_folder_path)))
+    logger.info("output_folder_path={0}".format(str(output_folder_path)))
+    logger.info("template_folder_path={0}".format(str(template_folder_path)))
+    logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
+    logger.info("data_type_list={0}".format(str(data_type_list)))
+    logger.info("model_type_list={0}".format(str(model_type_list)))
+    logger.info("file_type_list={0}".format(str(file_type_list)))
+    logger.info("grid_dict={0}".format(str(grid_dict)))
+    logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
+    logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
+    logger.info("merge_netcdfs={0}".format(str(merge_netcdfs)))
+    logger.info("cleanup={0}".format(str(cleanup)))
+    logger.info("write_file_list={0}".format(str(write_file_list)))
+    logger.info("template_version={0}".format(str(template_version)))
 
     if "long_range" in model_type_list:
         model_type_list.remove("long_range")
@@ -326,7 +359,7 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                         }
 
     for simulation_date in subset_work_dict["simulation_date"]:
-        logger.info("Subsetting {0}".format(simulation_date))
+        logger.info("-------------Subsetting {0}--------------------".format(simulation_date))
         for data_type in subset_work_dict["date_type"]:
             for model_type in subset_work_dict["model_type"]:
                 data_type_list_copy = subset_work_dict['file_type']
@@ -365,7 +398,7 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                         sim_elapsed = sim_end_dt - sim_start_dt
                         logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
-                        logger.error(str(type(ex)) + ex.message)
+                        logger.error(str(type(ex)) + ex.message + ex.strerror)
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)

@@ -95,7 +95,7 @@ def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=N
         sq_end_dt = datetime.datetime.now()
         logger.debug(sq_end_dt)
         sq_elapse_dt = sq_end_dt - sq_start_dt
-        logger.info("Done in {0}".foramt(sq_elapse_dt))
+        logger.info("Done in {0}".format(sq_elapse_dt))
         logger.info("--------------- Spatial Query Done----------------")
 
 
@@ -203,7 +203,7 @@ def perform_spatial_query(db_file=None,
                     );'
 
         conn = db.connect(db_file)
-        #conn.enable_load_extension(True)
+        conn.enable_load_extension(True)
         conn.execute("SELECT load_extension('mod_spatialite')")
         geometry_field_name = 'Shape'
 
@@ -289,6 +289,7 @@ def query_huc(db_file=None, huc_type=None, huc_id=None):
 
     try:
         conn = db.connect(db_file)
+        conn.enable_load_extension(True)
         conn.execute("SELECT load_extension('mod_spatialite')")
         cursor = conn.execute(sql_str_huc_wkt)
         huc_wkt = cursor.fetchone()[0].encode('ascii', 'ignore')

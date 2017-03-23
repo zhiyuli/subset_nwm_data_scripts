@@ -124,7 +124,7 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
         # if os.path.isfile(in_nc_file):
         #     os.remove(in_nc_file)
     finally:
-        return comid_list, index_list
+        return comid_list_np, index_list
 
 
 def merge_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
@@ -221,12 +221,11 @@ def merge_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                         fn_template = "nwm.t{HH}z.long_range.reservoir_" + str(mem_id) + ".f{XXX}.conus.nc"
                     elif file_type == "terrain":
                         raise NotImplementedError()
-                log_str = "Merging {model}".format(model=model)
+                log_str = "Merging {model}-{file_type}".format(model=model, file_type=file_type)
                 logger.info(log_str)
                 merge(HH_re_list=HH_re_list, HH_merged_list=HH_merged_list, XXX_re_list=XXX_re_list,
                       XXX_merged_list=XXX_merged_list, input_base_path=input_base_path, model=model,
                       fn_template=fn_template, output_base_path=output_base_path, cleanup=cleanup)
-
     pass
 
 
@@ -234,12 +233,11 @@ def merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_lis
          fn_template=None, output_base_path=None, cleanup=True):
 
     ncrcat_cmd_base = ["ncrcat", "-h"]
-    rm_cmd_base = ["rm", "-f"]
     for i in range(len(HH_re_list)):
         HH_re = HH_re_list[i]
         HH_merged = HH_merged_list[i]
         for j in range(len(XXX_re_list)):
-            rm_cmd = copy.copy(rm_cmd_base)
+            rm_list = []
             ncrcat_cmd = copy.copy(ncrcat_cmd_base)
             XXX_re = XXX_re_list[j]
             XXX_merged = XXX_merged_list[j]
@@ -260,7 +258,7 @@ def merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_lis
                 for fn in fn_list:
                     fn_path = os.path.join(data_folder_path, fn)
                     ncrcat_cmd.append(fn_path)
-                    rm_cmd.append(fn_path)
+                    rm_list.append(fn_path)
                 try:
                     proc = subprocess.Popen(ncrcat_cmd,
                                             stdin=subprocess.PIPE,
@@ -281,22 +279,8 @@ def merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_lis
                             logger.error(str(ncrcat_cmd))
 
                     if cleanup:
-                        proc = subprocess.Popen(rm_cmd,
-                                                stdin=subprocess.PIPE,
-                                                stdout=subprocess.PIPE,
-                                                stderr=subprocess.PIPE,
-                                                )
-                        proc.wait()
-                        stdout, stderr = proc.communicate()
-                        if stdout:
-                            logger.error(stdout)
-                            logger.error(str(ncrcat_cmd))
-                        if stderr:
-                            logger.error(stderr)
-                            logger.error(str(ncrcat_cmd))
-
-                    # proc = subprocess.call(ncrcat_cmd)
-                    # proc = subprocess.call(rm_cmd)
+                        for f in rm_list:
+                            os.remove(f)
 
                 except Exception as ex:
                     logger.error(ex.message)
