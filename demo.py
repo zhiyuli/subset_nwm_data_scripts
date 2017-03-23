@@ -76,9 +76,9 @@ if __name__ == "__main__":
         # in_epsg = None
         # huc_id = "16020306"
 
-        query_result_dict = query_comids_and_grid_indices(db_file_path=db_file_path, db_epsg_code=db_epsg_code, job_id=job_id,
-                                             query_type=query_type, shp_path=shp_path, geom_str=geom_str,
-                                             in_epsg=in_epsg, huc_id=huc_id)
+        query_result_dict = query_comids_and_grid_indices(db_file_path=db_file_path, db_epsg_code=db_epsg_code,
+                                                          job_id=job_id, query_type=query_type, shp_path=shp_path,
+                                                          geom_str=geom_str, in_epsg=in_epsg, huc_id=huc_id)
         if query_result_dict is None:
             raise Exception("Failed to retrieve spatial query result")
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
         template_version = "v1.1"
-        merge_netcdfs = True
+        merge_netcdfs = False
         cleanup = True
         simulation_date_list = ["20170319"]
         data_type_list = ['forcing', "forecast"]

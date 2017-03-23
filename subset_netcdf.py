@@ -7,6 +7,7 @@ from subsetting_lib import subset_grid_file, subset_comid_file, merge_netcdf
 
 logger = logging.getLogger('subset_netcdf')
 
+
 def render_cdl_file(content_list=[], file_path=None):
     for item in content_list:
         replace_text_in_file(search_text=item[0], replace_text=item[1], file_path=file_path)
@@ -68,7 +69,7 @@ def subset_nwm_netcdf(job_id=None,
                       cleanup=False):
 
     if job_id is None:
-        job_id = ""
+        job_id = "NO_JOB_ID"
     output_folder_path = os.path.join(output_folder_path, job_id)
     data_type = data_type.lower()
     model_type = model_type.lower() if model_type else None
@@ -162,7 +163,7 @@ def subset_nwm_netcdf(job_id=None,
         raise Exception("invalid data_type: {0}".format(data_type))
 
     if use_merge_template:
-        template_filename = template_filename + "_merge"
+        template_filename += "_merge"
     if "long_range_mem" in model_type:
         # long_range uses same templates for all mem1-mem4
         template_file = os.path.join(template_folder_path, template_version,
@@ -199,8 +200,8 @@ def subset_nwm_netcdf(job_id=None,
             content_list.append(["{%y%}", str(dim_y_len)])
 
         content_list.append(["{%filename%}", nc_template_file_name])
-        content_list.append(["{%model_initialization_time%}", "2020-01-01_00:00:00"])
-        content_list.append(["{%model_output_valid_time%}", "2020-01-01_00:00:00"])
+        content_list.append(["{%model_initialization_time%}", "2030-01-01_00:00:00"])
+        content_list.append(["{%model_output_valid_time%}", "2030-01-01_00:00:00"])
 
         render_cdl_file(content_list=content_list, file_path=cdl_file_path)
         create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
@@ -339,12 +340,12 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                         comid_list = stream_comid_list
                         if 'reservoir' == file_type:
                             comid_list = reservoir_comid_list
-                        log_str = "{simulation_date}-{data_type}-{model_type}-{file_type}".\
+                        log_str = "Working on: {simulation_date}-{data_type}-{model_type}-{file_type}".\
                             format(simulation_date=simulation_date, data_type=data_type,
                                    model_type=model_type, file_type=file_type)
                         logger.info(log_str)
                         sim_start_dt = datetime.datetime.now()
-                        logger.info(sim_start_dt)
+                        logger.debug(sim_start_dt)
                         subset_nwm_netcdf(job_id=job_id,
                                           grid=grid_dict,
                                           comid_list=comid_list,
@@ -360,9 +361,9 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                                           use_merge_template=merge_netcdfs,
                                           cleanup=cleanup)
                         sim_end_dt = datetime.datetime.now()
-                        logger.info(sim_end_dt)
+                        logger.debug(sim_end_dt)
                         sim_elapsed = sim_end_dt - sim_start_dt
-                        logger.info(sim_elapsed)
+                        logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
                         logger.error(str(type(ex)) + ex.message)
 
