@@ -268,12 +268,10 @@ def merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_lis
                     proc.wait()
                     stdout, stderr = proc.communicate()
                     if stdout:
-                        logger.error(stdout)
-                        logger.error(str(ncrcat_cmd))
+                        logger.debug(stdout)
                     if stderr:
                         if "INFO/WARNING".lower() in stderr.lower():
                             logger.debug(stderr)
-                            logger.debug(str(ncrcat_cmd))
                         else:
                             logger.error(stderr)
                             logger.error(str(ncrcat_cmd))
