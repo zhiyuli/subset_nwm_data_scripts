@@ -29,12 +29,15 @@ if __name__ == "__main__":
     logger.info("-------------Process Started-------------------")
     logger.info(all_start_dt)
     try:
+        # windows
+        #db_file_path = "F:/NWM/DB/nwm.sqlite"
+
         db_file_path = "/home/drew/Desktop/nwm.sqlite"
         db_epsg_code = 4269
 
         # Shapefile utah
         query_type = "shapefile"
-        shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
+        shp_path = "./data/utah/utah_utm_nad83_zone_12.shp"
         geom_str = None
         in_epsg = None
         huc_id = None
@@ -83,6 +86,9 @@ if __name__ == "__main__":
             raise Exception("Failed to retrieve spatial query result")
 
         #############################################################################################33
+        # windows
+        #netcdf_folder_path = "G:/nwm_new_data"
+
         netcdf_folder_path = "/media/sf_nwm_new_data"
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
