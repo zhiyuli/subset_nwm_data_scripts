@@ -8,7 +8,12 @@ variables:
 		time:long_name = "valid output time" ;
 		time:standard_name = "time" ;
 		time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
-	int streamflow(time, feature_id) ;
+		time:_Storage = "chunked" ;
+		time:_ChunkSizes = 1048576 ;
+		time:_DeflateLevel = 2 ;
+		time:_Shuffle = "true" ;
+		time:_Endianness = "little" ;
+	int streamflow(feature_id) ;
 		streamflow:_FillValue = -999900 ;
 		streamflow:long_name = "River Flow" ;
 		streamflow:units = "m3 s-1" ;
@@ -17,7 +22,12 @@ variables:
 		streamflow:add_offset = 0. ;
 		streamflow:valid_range = 0., 50000000. ;
 		streamflow:missing_value = -999900 ;
-	int nudge(time, feature_id) ;
+		streamflow:_Storage = "chunked" ;
+		streamflow:_ChunkSizes = 905633 ;
+		streamflow:_DeflateLevel = 2 ;
+		streamflow:_Shuffle = "true" ;
+		streamflow:_Endianness = "little" ;
+	int nudge(feature_id) ;
 		nudge:_FillValue = -99990 ;
 		nudge:long_name = "Amount of stream flow alteration" ;
 		nudge:units = "m3 s-1" ;
@@ -26,7 +36,12 @@ variables:
 		nudge:add_offset = 0. ;
 		nudge:valid_range = -5000000., 5000000. ;
 		nudge:missing_value = -99990 ;
-	int q_lateral(time, feature_id) ;
+		nudge:_Storage = "chunked" ;
+		nudge:_ChunkSizes = 905633 ;
+		nudge:_DeflateLevel = 2 ;
+		nudge:_Shuffle = "true" ;
+		nudge:_Endianness = "little" ;
+	int q_lateral(feature_id) ;
 		q_lateral:_FillValue = -99990 ;
 		q_lateral:long_name = "Runoff into channel reach" ;
 		q_lateral:units = "m3 s-1" ;
@@ -35,7 +50,12 @@ variables:
 		q_lateral:add_offset = 0. ;
 		q_lateral:valid_range = 0., 500000. ;
 		q_lateral:missing_value = -99990 ;
-	int velocity(time, feature_id) ;
+		q_lateral:_Storage = "chunked" ;
+		q_lateral:_ChunkSizes = 905633 ;
+		q_lateral:_DeflateLevel = 2 ;
+		q_lateral:_Shuffle = "true" ;
+		q_lateral:_Endianness = "little" ;
+	int velocity(feature_id) ;
 		velocity:_FillValue = -999900 ;
 		velocity:long_name = "River Velocity" ;
 		velocity:units = "m s-1" ;
@@ -44,13 +64,25 @@ variables:
 		velocity:add_offset = 0. ;
 		velocity:valid_range = 0., 1000000. ;
 		velocity:missing_value = -999900 ;
+		velocity:_Storage = "chunked" ;
+		velocity:_ChunkSizes = 905633 ;
+		velocity:_DeflateLevel = 2 ;
+		velocity:_Shuffle = "true" ;
+		velocity:_Endianness = "little" ;
 	int feature_id(feature_id) ;
 		feature_id:long_name = "Reach ID" ;
 		feature_id:comment = "NHDPlusv2 ComIDs within CONUS, arbitrary Reach IDs outside of CONUS" ;
-	int reference_time(time, reference_time) ;
+		feature_id:_Storage = "chunked" ;
+		feature_id:_ChunkSizes = 905633 ;
+		feature_id:_DeflateLevel = 2 ;
+		feature_id:_Shuffle = "true" ;
+		feature_id:_Endianness = "little" ;
+	int reference_time(reference_time) ;
 		reference_time:long_name = "model initialization time" ;
 		reference_time:standard_name = "forecast_reference_time" ;
 		reference_time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
+		reference_time:_Storage = "contiguous" ;
+		reference_time:_Endianness = "little" ;
 
 // global attributes:
 		:featureType = "timeSeries" ;
@@ -62,4 +94,7 @@ variables:
 		:cdm_datatype = "Station" ;
 		:esri_pe_string = "GEOGCS[GCS_North_American_1983,DATUM[D_North_American_1983,SPHEROID[GRS_1980,6378137.0,298.257222101]],PRIMEM[Greenwich,0.0],UNIT[Degree,0.017453292519943295]]" ;
 		:Conventions = "CF-1.6" ;
+		:_SuperblockVersion = 2 ;
+		:_IsNetcdf4 = 1 ;
+		:_Format = "netCDF-4 classic model" ;
 }

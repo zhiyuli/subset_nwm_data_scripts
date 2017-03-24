@@ -101,17 +101,18 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
                     if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
                         if name == "feature_id":
                             # v1.1, merge: feature_id, lon, lat, elevation
-                            var_obj[:] = comid_list_np
+                            var_obj = comid_list_np
                         else:
-                            # v1.1: hydrologic parameter
+                            # v1.1: hydrologic parameter; merge: lon lat
                             var_obj[:] = in_nc.variables[name][index_list]
+                            #var_obj[:] = in_nc.variables[name][0:53000]
                     elif len(var_obj.dimensions) == 2:
                         if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
                             # merge: hydrologic parameter
-                            var_obj[0][:] = in_nc.variables[name][index_list]
+                            var_obj[0] = in_nc.variables[name][index_list]
                         elif var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "reference_time":
                             # merge: reference_time
-                            var_obj[0][:] = in_nc.variables[name][:]
+                            var_obj[0] = in_nc.variables[name][:]
                         else:
                             raise Exception("invalid nc")
                     else:
@@ -124,7 +125,10 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
         # if os.path.isfile(in_nc_file):
         #     os.remove(in_nc_file)
     finally:
-        return comid_list_np, index_list
+        if reuse_comid_and_index:
+            return comid_list_np, index_list
+        else:
+            return comid_list, None
 
 
 def merge_netcdf(input_base_path=None, output_base_path=None, cleanup=True):

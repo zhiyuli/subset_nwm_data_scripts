@@ -32,12 +32,12 @@ if __name__ == "__main__":
         db_file_path = "/home/drew/Desktop/nwm.sqlite"
         db_epsg_code = 4269
 
-        # # Shapefile utah
-        # query_type = "shapefile"
-        # shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
-        # geom_str = None
-        # in_epsg = None
-        # huc_id = None
+        # Shapefile utah
+        query_type = "shapefile"
+        shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
+        geom_str = None
+        in_epsg = None
+        huc_id = None
 
         # # geojson
         # query_type = "geojson"
@@ -55,12 +55,12 @@ if __name__ == "__main__":
         # in_epsg = 26912
         # huc_id = None
         #
-        # huc 12
-        query_type = "huc_12"
-        shp_path = None
-        geom_str = None
-        in_epsg = None
-        huc_id = "160102040504"
+        # # huc 12
+        # query_type = "huc_12"
+        # shp_path = None
+        # geom_str = None
+        # in_epsg = None
+        # huc_id = "160102040504"
         #
         # # huc 10
         # query_type = "huc_10"
@@ -87,15 +87,15 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
         template_version = "v1.1"
-        merge_netcdfs = True
+        merge_netcdfs = False
         cleanup = True
         simulation_date_list = ["20170322"]
-        data_type_list = ['forcing', "forecast"]
-        #data_type_list = ["forecast"]
-        model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_type_list = ['analysis_assim', 'medium_range']
-        file_type_list = ['channel', 'reservoir', 'land']
-        #file_type_list = ['channel', 'reservoir']
+        #data_type_list = ['forcing', "forecast"]
+        data_type_list = ["forecast"]
+        #model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_type_list = ['short_range']
+        #file_type_list = ['channel', 'reservoir', 'land']
+        file_type_list = ['channel']
 
         write_file_list = None
         # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",

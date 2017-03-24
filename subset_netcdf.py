@@ -125,6 +125,7 @@ def subset_nwm_netcdf(job_id=None,
 
             if file_type == "channel":
                 cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
+                cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template_chunked"
             elif file_type == "land":
                 cdl_template_filename = "nwm.tHHz.short_range.land.fXXX.conus.cdl_template"
             elif file_type == "reservoir":
@@ -315,7 +316,7 @@ def subset_nwm_netcdf(job_id=None,
                                   out_nc_file=out_nc_file,
                                   comid_list=comid_list_dict[file_type],
                                   index_list=index_list_dict[file_type],
-                                  reuse_comid_and_index=True)
+                                  reuse_comid_and_index=False)
     if cleanup:
         # remove nc_template folder
         shutil.rmtree(out_nc_folder_template_path)
