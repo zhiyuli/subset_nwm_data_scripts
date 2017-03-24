@@ -29,18 +29,20 @@ if __name__ == "__main__":
     logger.info("-------------Process Started-------------------")
     logger.info(all_start_dt)
     try:
-        # windows
-        #db_file_path = "F:/NWM/DB/nwm.sqlite"
+        # Windows
+        db_file_path = "F:/NWM/DB/nwm.sqlite"
 
-        db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        # Linux
+        #db_file_path = "/home/drew/Desktop/nwm.sqlite"
+
         db_epsg_code = 4269
 
-        # Shapefile utah
-        query_type = "shapefile"
-        shp_path = "./data/utah/utah_utm_nad83_zone_12.shp"
-        geom_str = None
-        in_epsg = None
-        huc_id = None
+        # # Shapefile utah
+        # query_type = "shapefile"
+        # shp_path = "./data/utah/utah_utm_nad83_zone_12.shp"
+        # geom_str = None
+        # in_epsg = None
+        # huc_id = None
 
         # # geojson
         # query_type = "geojson"
@@ -58,12 +60,12 @@ if __name__ == "__main__":
         # in_epsg = 26912
         # huc_id = None
         #
-        # # huc 12
-        # query_type = "huc_12"
-        # shp_path = None
-        # geom_str = None
-        # in_epsg = None
-        # huc_id = "160102040504"
+        # huc 12
+        query_type = "huc_12"
+        shp_path = None
+        geom_str = None
+        in_epsg = None
+        huc_id = "160102040504"
         #
         # # huc 10
         # query_type = "huc_10"
@@ -86,22 +88,26 @@ if __name__ == "__main__":
             raise Exception("Failed to retrieve spatial query result")
 
         #############################################################################################33
-        # windows
-        #netcdf_folder_path = "G:/nwm_new_data"
+        # Windows
+        #netcdf_folder_path = "C:\\short_range\\rechunked"
+        #netcdf_folder_path = "C:\\short_range"
+        netcdf_folder_path = "G:\\nwm_new_data"
+        # Linux
+        #netcdf_folder_path = "/media/sf_nwm_new_data"
 
-        netcdf_folder_path = "/media/sf_nwm_new_data"
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
         template_version = "v1.1"
         merge_netcdfs = False
-        cleanup = True
-        simulation_date_list = ["20170322"]
-        #data_type_list = ['forcing', "forecast"]
-        data_type_list = ["forecast"]
-        #model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_type_list = ['short_range']
-        #file_type_list = ['channel', 'reservoir', 'land']
-        file_type_list = ['channel']
+        cleanup = False
+        use_chunked_template = True
+        simulation_date_list = ["20170323"]
+        data_type_list = ['forcing', "forecast"]
+        #data_type_list = ["forcing"]
+        model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_type_list = ['medium_range']
+        file_type_list = ['channel', 'reservoir', 'land']
+        #file_type_list = ['reservoir']
 
         write_file_list = None
         # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
@@ -117,7 +123,8 @@ if __name__ == "__main__":
                      template_folder_path=template_folder_path, simulation_date_list=simulation_date_list,
                      data_type_list=data_type_list, model_type_list=model_type_list, file_type_list=file_type_list,
                      grid_dict=grid_dict, stream_comid_list=stream_comid_list, reservoir_comid_list=reservoir_comid_list,
-                     merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list)
+                     merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list,
+                     use_chunked_template=use_chunked_template)
 
     except Exception as ex:
         logger.exception(ex.message)
@@ -126,4 +133,4 @@ if __name__ == "__main__":
         logger.debug(all_end_dt)
         all_elapse_dt = all_end_dt - all_start_dt
         logger.info(all_elapse_dt)
-        logger.info("--------------- Process Ended----------------")
+        logger.info("--------------- Process Ended {0}----------------".format(job_id))

@@ -104,8 +104,13 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
                             var_obj = comid_list_np
                         else:
                             # v1.1: hydrologic parameter; merge: lon lat
-                            var_obj[:] = in_nc.variables[name][index_list]
-                            #var_obj[:] = in_nc.variables[name][0:53000]
+                            # Do not access big data from netcdf lib using non-contiguous index list
+                            # var_obj[:] = in_nc.variables[name][index_list]
+
+                            # Instead, read all data into memory then subset it using index list
+                            # See speed_test.py for details
+                            all_data_np = in_nc.variables[name][:]
+                            var_obj[:] = all_data_np[index_list]
                     elif len(var_obj.dimensions) == 2:
                         if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
                             # merge: hydrologic parameter

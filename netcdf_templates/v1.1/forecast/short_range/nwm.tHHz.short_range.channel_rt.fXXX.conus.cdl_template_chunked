@@ -9,7 +9,6 @@ variables:
 		time:standard_name = "time" ;
 		time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
 		time:_Storage = "chunked" ;
-		time:_ChunkSizes = 1048576 ;
 		time:_DeflateLevel = 2 ;
 		time:_Shuffle = "true" ;
 		time:_Endianness = "little" ;
@@ -22,8 +21,7 @@ variables:
 		streamflow:add_offset = 0. ;
 		streamflow:valid_range = 0., 50000000. ;
 		streamflow:missing_value = -999900 ;
-		streamflow:_Storage = "chunked" ;
-		streamflow:_ChunkSizes = 53000 ;
+		streamflow:_Storage = "contiguous" ;
 		streamflow:_DeflateLevel = 2 ;
 		streamflow:_Shuffle = "true" ;
 		streamflow:_Endianness = "little" ;
@@ -36,8 +34,7 @@ variables:
 		nudge:add_offset = 0. ;
 		nudge:valid_range = -5000000., 5000000. ;
 		nudge:missing_value = -99990 ;
-		nudge:_Storage = "chunked" ;
-		nudge:_ChunkSizes = 53000 ;
+		nudge:_Storage = "contiguous" ;
 		nudge:_DeflateLevel = 2 ;
 		nudge:_Shuffle = "true" ;
 		nudge:_Endianness = "little" ;
@@ -50,8 +47,7 @@ variables:
 		q_lateral:add_offset = 0. ;
 		q_lateral:valid_range = 0., 500000. ;
 		q_lateral:missing_value = -99990 ;
-		q_lateral:_Storage = "chunked" ;
-		q_lateral:_ChunkSizes = 53000 ;
+		q_lateral:_Storage = "contiguous" ;
 		q_lateral:_DeflateLevel = 2 ;
 		q_lateral:_Shuffle = "true" ;
 		q_lateral:_Endianness = "little" ;
@@ -64,16 +60,14 @@ variables:
 		velocity:add_offset = 0. ;
 		velocity:valid_range = 0., 1000000. ;
 		velocity:missing_value = -999900 ;
-		velocity:_Storage = "chunked" ;
-		velocity:_ChunkSizes = 53000 ;
+		velocity:_Storage = "contiguous" ;
 		velocity:_DeflateLevel = 2 ;
 		velocity:_Shuffle = "true" ;
 		velocity:_Endianness = "little" ;
 	int feature_id(feature_id) ;
 		feature_id:long_name = "Reach ID" ;
 		feature_id:comment = "NHDPlusv2 ComIDs within CONUS, arbitrary Reach IDs outside of CONUS" ;
-		feature_id:_Storage = "chunked" ;
-		feature_id:_ChunkSizes = 53000 ;
+		feature_id:_Storage = "contiguous" ;
 		feature_id:_DeflateLevel = 2 ;
 		feature_id:_Shuffle = "true" ;
 		feature_id:_Endianness = "little" ;

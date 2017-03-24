@@ -72,7 +72,8 @@ def subset_nwm_netcdf(job_id=None,
                       template_version="v1.1",
                       write_file_list=None,
                       use_merge_template=False,
-                      cleanup=False):
+                      cleanup=False,
+                      use_chunked_template=True):
 
     if job_id is None:
         job_id = "NO_JOB_ID"
@@ -125,7 +126,6 @@ def subset_nwm_netcdf(job_id=None,
 
             if file_type == "channel":
                 cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
-                cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template_chunked"
             elif file_type == "land":
                 cdl_template_filename = "nwm.tHHz.short_range.land.fXXX.conus.cdl_template"
             elif file_type == "reservoir":
@@ -171,6 +171,10 @@ def subset_nwm_netcdf(job_id=None,
 
     if use_merge_template:
         cdl_template_filename += "_merge"
+
+    if use_chunked_template:
+        cdl_template_filename += "_chunked"
+
     if "long_range_mem" in model_type:
         # long_range uses same templates for all mem1-mem4
         cdl_template_file_path = os.path.join(template_folder_path, template_version,
@@ -316,7 +320,7 @@ def subset_nwm_netcdf(job_id=None,
                                   out_nc_file=out_nc_file,
                                   comid_list=comid_list_dict[file_type],
                                   index_list=index_list_dict[file_type],
-                                  reuse_comid_and_index=False)
+                                  reuse_comid_and_index=True)
     if cleanup:
         # remove nc_template folder
         shutil.rmtree(out_nc_folder_template_path)
@@ -326,7 +330,8 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                  template_folder_path=None, simulation_date_list=None, data_type_list=None,
                  model_type_list=None, file_type_list=None, grid_dict=None, stream_comid_list=None,
                  reservoir_comid_list=None,
-                 merge_netcdfs=True, cleanup=True, write_file_list=None, template_version="v1.1"):
+                 merge_netcdfs=True, cleanup=True, write_file_list=None, template_version="v1.1",
+                 use_chunked_template=True):
 
     logger.info("---------------Subsetting {0}----------------".format(job_id))
     start_dt = datetime.datetime.now()
@@ -393,13 +398,14 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                                           template_version=template_version,
                                           write_file_list=write_file_list,
                                           use_merge_template=merge_netcdfs,
-                                          cleanup=cleanup)
+                                          cleanup=cleanup,
+                                          use_chunked_template=use_chunked_template)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
                         sim_elapsed = sim_end_dt - sim_start_dt
                         logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
-                        logger.error(str(type(ex)) + ex.message + ex.strerror)
+                        logger.error(str(type(ex)) + ex.message)
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)

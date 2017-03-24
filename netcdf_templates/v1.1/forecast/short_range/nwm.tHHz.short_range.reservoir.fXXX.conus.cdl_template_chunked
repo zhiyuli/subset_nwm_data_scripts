@@ -1,0 +1,56 @@
+netcdf {%filename%} {
+dimensions:
+	feature_id = {%feature_id%} ;
+	time = UNLIMITED ; // (1 currently)
+	reference_time = 1 ;
+variables:
+	float elevation(feature_id) ;
+		elevation:_FillValue = -9.e+15f ;
+		elevation:long_name = "Water Surface Elevation" ;
+		elevation:units = "m" ;
+		elevation:coordinates = "latitude longitude" ;
+		elevation:mising_value = -8.9999998e+15 ;
+		elevation:valid_range = -100, 25000 ;
+	float inflow(feature_id) ;
+		inflow:_FillValue = -9.e+15f ;
+		inflow:units = "m3 s-1" ;
+		inflow:long_name = "Lake Inflow" ;
+		inflow:coordinates = "latitude longitude" ;
+		inflow:mising_value = -8.9999998e+15 ;
+		inflow:valid_range = -10000, 10000 ;
+	float outflow(feature_id) ;
+		outflow:_FillValue = -9.e+15f ;
+		outflow:units = "m3 s-1" ;
+		outflow:long_name = "Lake Outflow" ;
+		outflow:coordinates = "latitude longitude" ;
+		outflow:mising_value = -8.9999998e+15 ;
+		outflow:valid_range = -10000, 10000 ;
+	int time(time) ;
+		time:long_name = "valid output time" ;
+		time:standard_name = "time" ;
+		time:mising_value = -8.9999998e+15 ;
+		time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
+	float latitude(feature_id) ;
+		latitude:long_name = "Lake latitude" ;
+		latitude:units = "degrees_north" ;
+		latitude:standard_name = "latitude" ;
+	float longitude(feature_id) ;
+		longitude:long_name = "Lake longitude" ;
+		longitude:units = "degrees_east" ;
+		longitude:standard_name = "longitude" ;
+	int feature_id(feature_id) ;
+		feature_id:long_name = "Lake COMMON ID" ;
+		feature_id:comment = "ComID from NHDPlusV2 waterbody layer" ;
+	int reference_time(reference_time) ;
+		reference_time:long_name = "model initialization time" ;
+		reference_time:standard_name = "forecast_reference_time" ;
+		reference_time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
+
+// global attributes:
+		:featureType = "timeSeries" ;
+		:proj4 = "+proj=longlat +datum=NAD83 +no_defs" ;
+		:model_initialization_time = "{%model_initialization_time%}" ;
+		:model_output_valid_time = "{%model_output_valid_time%}" ;
+		:esri_pe_string = "GEOGCS[GCS_North_American_1983,DATUM[D_North_American_1983,SPHEROID[GRS_1980,6378137.0,298.257222101]],PRIMEM[Greenwich,0.0],UNIT[Degree,0.017453292519943295]]" ;
+		:Conventions = "CF-1.6" ;
+}
