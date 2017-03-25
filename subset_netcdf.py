@@ -354,6 +354,7 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
     logger.info("cleanup={0}".format(str(cleanup)))
     logger.info("write_file_list={0}".format(str(write_file_list)))
     logger.info("template_version={0}".format(str(template_version)))
+    logger.info("use_chunked_template={0}".format(use_chunked_template))
 
     if "long_range" in model_type_list:
         model_type_list.remove("long_range")

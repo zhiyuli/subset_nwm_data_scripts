@@ -102,12 +102,12 @@ if __name__ == "__main__":
         cleanup = False
         use_chunked_template = True
         simulation_date_list = ["20170323"]
-        data_type_list = ["forecast", 'forcing']
-        #data_type_list = ["forecast"]
-        model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_type_list = ['long_range']
-        file_type_list = ['channel', 'reservoir', 'land']
-        #file_type_list = ['channel']
+        #data_type_list = ["forecast", 'forcing']
+        data_type_list = ["forecast"]
+        #model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_type_list = ['long_range']
+        #file_type_list = ['channel', 'reservoir', 'land']
+        file_type_list = ['land']
 
         write_file_list = None
         # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
