@@ -265,6 +265,7 @@ def subset_nwm_netcdf(job_id=None,
         os.makedirs(out_nc_folder_path)
 
     comid_list_dict = {"channel": None, "reservoir": None}
+    direct_read = None
     comid_list_dict[file_type] = comid_list
     index_list_dict = {"channel": None, "reservoir": None}
     for nc_filename in nc_filename_list:
@@ -315,12 +316,13 @@ def subset_nwm_netcdf(job_id=None,
 
         elif data_type == "forecast" and (file_type == "channel" or file_type == "reservoir"):
 
-            comid_list_dict[file_type], index_list_dict[file_type] = \
+            comid_list_dict[file_type], index_list_dict[file_type], direct_read = \
                 subset_comid_file(in_nc_file=in_nc_file,
                                   out_nc_file=out_nc_file,
                                   comid_list=comid_list_dict[file_type],
                                   index_list=index_list_dict[file_type],
-                                  reuse_comid_and_index=True)
+                                  reuse_comid_and_index=True,
+                                  direct_read=direct_read)
     if cleanup:
         # remove nc_template folder
         shutil.rmtree(out_nc_folder_template_path)

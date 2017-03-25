@@ -5,6 +5,7 @@ import logging
 import re
 import copy
 import subprocess
+import datetime
 
 logger = logging.getLogger('subset_netcdf')
 
@@ -75,7 +76,7 @@ def _get_comid_indices(find_comids, all_comids):
 
 
 def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_list=None, reuse_comid_and_index=False,
-                     template_version="v1.1", netcdf_format="NETCDF4_CLASSIC"):
+                     template_version="v1.1", netcdf_format="NETCDF4_CLASSIC", direct_read=None):
     try:
         if not os.path.isfile(in_nc_file):
             raise Exception("in_nc_file missing @: {0}".format(in_nc_file))
@@ -103,14 +104,32 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
                             # v1.1, merge: feature_id, lon, lat, elevation
                             var_obj = comid_list_np
                         else:
-                            # v1.1: hydrologic parameter; merge: lon lat
-                            # Do not access big data from netcdf lib using non-contiguous index list
-                            # var_obj[:] = in_nc.variables[name][index_list]
+                            if direct_read is None:
+                                s = datetime.datetime.now()
+                                all_data = in_nc.variables[name][:]
+                                e = datetime.datetime.now()
+                                t_indirect = e - s
 
-                            # Instead, read all data into memory then subset it using index list
-                            # See speed_test.py for details
-                            all_data_np = in_nc.variables[name][:]
-                            var_obj[:] = all_data_np[index_list]
+                                s = datetime.datetime.now()
+                                slice_data = in_nc.variables[name][index_list]
+                                e = datetime.datetime.now()
+                                t_direct = e - s
+
+                                if t_direct < t_indirect:
+                                    direct_read = True
+                                else:
+                                    direct_read = False
+
+                            if direct_read:
+                                # v1.1: hydrologic parameter; merge: lon lat
+                                # Do not access big data from netcdf lib using non-contiguous index list
+                                var_obj[:] = in_nc.variables[name][index_list]
+                            else:
+                                # Instead, read all data into memory then subset it using index list
+                                # See speed_test.py for details
+                                all_data_np = in_nc.variables[name][:]
+                                var_obj[:] = all_data_np[index_list]
+
                     elif len(var_obj.dimensions) == 2:
                         if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
                             # merge: hydrologic parameter
@@ -131,9 +150,9 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
         #     os.remove(in_nc_file)
     finally:
         if reuse_comid_and_index:
-            return comid_list_np, index_list
+            return comid_list_np, index_list, direct_read
         else:
-            return comid_list, None
+            return comid_list, None, direct_read
 
 
 def merge_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
