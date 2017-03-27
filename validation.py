@@ -21,7 +21,7 @@ def netcdf2raster(inNetCDF_Path, variable, XDimension, YDimension, bandDimmensio
 if __name__ == "__main__":
 
     try:
-        inNetCDFFile = "F:\\subset_nwm_windows\\subset_nwm_data_scripts\\temp\\9470e277-5bbf-4aef-8467-eca991b28dde\\nwm.20170322\\analysis_assim\\nwm.tALLz.analysis_assim.land.tm00.conus.nc"
+        inNetCDFFile = "F:\\subset_nwm_windows\\subset_nwm_data_scripts\\temp\\c81a8a6f-c3c6-4454-bbe9-fa892b24beff\\nwm.20170323\\analysis_assim\\nwm.t20z.analysis_assim.land.tm00.conus.nc"
         variable = "ACCET"
         XDimension = "x"
         YDimension = "y"
@@ -31,7 +31,7 @@ if __name__ == "__main__":
         raster_mem_sub = netcdf2raster(inNetCDFFile, variable, XDimension, YDimension, dimensionValues=dimensionValues)
         print raster_mem_sub
 
-        inNetCDFFile = "G:\\nwm_new_data\\nwm.20170322\\analysis_assim\\nwm.t10z.analysis_assim.land.tm00.conus.nc"
+        inNetCDFFile = "G:\\nwm_new_data\\nwm.20170323\\analysis_assim\\nwm.t21z.analysis_assim.land.tm00.conus.nc"
         variable = "ACCET"
         XDimension = "x"
         YDimension = "y"
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 
         arcpy.CalculateStatistics_management(diff_raster)
         if diff_raster.maximum != 0 or diff_raster.minimum != 0:
-            print inNetCDFFile
+            print "Data does not match @ {0}".format(inNetCDFFile)
         print "Done"
         pass
     except Exception as ex:
