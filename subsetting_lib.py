@@ -298,7 +298,8 @@ def merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_lis
             if os.path.exists(data_folder_path):
                 folder_content_list = os.listdir(data_folder_path)
                 fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
-                if len(fn_list) == 0:
+                # only perform merge on 2+ files
+                if len(fn_list) < 2:
                     continue
                 fn_list.sort()
                 fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)

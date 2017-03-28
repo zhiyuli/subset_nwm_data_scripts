@@ -224,7 +224,7 @@ def subset_nwm_netcdf(job_id=None,
         for var in var_list:
             if var[0] == "HH":
                 var[1] = time_stamp_list
-            break
+                break
     nc_file_name = nc_template_file_name
     nc_filename_list = [nc_file_name]
     for var in var_list:
