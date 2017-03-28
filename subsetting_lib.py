@@ -75,6 +75,27 @@ def _get_comid_indices(find_comids, all_comids):
     return index
 
 
+def _test_read_indirect_direct(direct_read=None, in_nc=None, var_name=None, index_list=None):
+
+    if direct_read is None:
+        # test which reading mode is faster, direct or indirect
+        s = datetime.datetime.now()
+        all_data = in_nc.variables[var_name][:]
+        e = datetime.datetime.now()
+        t_indirect = e - s
+
+        s = datetime.datetime.now()
+        slice_data = in_nc.variables[var_name][index_list]
+        e = datetime.datetime.now()
+        t_direct = e - s
+
+        if t_direct < t_indirect:
+            direct_read = True
+        else:
+            direct_read = False
+    return direct_read
+
+
 def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_list=None, reuse_comid_and_index=False,
                      template_version="v1.1", netcdf_format="NETCDF4_CLASSIC", direct_read=None):
     try:
@@ -104,21 +125,11 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
                             # v1.1, merge: feature_id, lon, lat, elevation
                             var_obj = comid_list_np
                         else:
-                            if direct_read is None:
-                                s = datetime.datetime.now()
-                                all_data = in_nc.variables[name][:]
-                                e = datetime.datetime.now()
-                                t_indirect = e - s
-
-                                s = datetime.datetime.now()
-                                slice_data = in_nc.variables[name][index_list]
-                                e = datetime.datetime.now()
-                                t_direct = e - s
-
-                                if t_direct < t_indirect:
-                                    direct_read = True
-                                else:
-                                    direct_read = False
+                            # test which reading mode is faster, direct or indirect
+                            direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                     in_nc=in_nc,
+                                                                     var_name=name,
+                                                                     index_list=index_list)
 
                             if direct_read:
                                 # v1.1: hydrologic parameter; merge: lon lat
@@ -132,8 +143,19 @@ def subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_
 
                     elif len(var_obj.dimensions) == 2:
                         if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
+
+                            # test which reading mode is faster, direct or indirect
+                            direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                     in_nc=in_nc,
+                                                                     var_name=name,
+                                                                     index_list=index_list)
                             # merge: hydrologic parameter
-                            var_obj[0] = in_nc.variables[name][index_list]
+                            if direct_read:
+                                var_obj[0] = in_nc.variables[name][index_list]
+                            else:
+                                all_data_np = in_nc.variables[name][:]
+                                var_obj[0] = all_data_np[index_list]
+
                         elif var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "reference_time":
                             # merge: reference_time
                             var_obj[0] = in_nc.variables[name][:]

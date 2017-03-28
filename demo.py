@@ -98,16 +98,17 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
         template_folder_path = "./netcdf_templates"
         template_version = "v1.1"
-        merge_netcdfs = False
-        cleanup = False
+        merge_netcdfs = True
+        cleanup = True
         use_chunked_template = True
-        simulation_date_list = ["20170322"]
+        simulation_date_list = ["20170323"]
         data_type_list = ["forecast", 'forcing']
         #data_type_list = ["forecast"]
         model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_type_list = ['long_range']
+        #model_type_list = ['long_range_mem3']
         file_type_list = ['channel', 'reservoir', 'land']
-        #file_type_list = ['channel', 'reservoir']
+        #file_type_list = ['reservoir']
+        time_stamp_list = []  # ["01", "02", ...];  [] or None means all default time stamps
 
         write_file_list = None
         # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
@@ -122,6 +123,7 @@ if __name__ == "__main__":
         start_subset(job_id=job_id, netcdf_folder_path=netcdf_folder_path, output_folder_path=output_folder_path,
                      template_folder_path=template_folder_path, simulation_date_list=simulation_date_list,
                      data_type_list=data_type_list, model_type_list=model_type_list, file_type_list=file_type_list,
+                     time_stamp_list=time_stamp_list,
                      grid_dict=grid_dict, stream_comid_list=stream_comid_list, reservoir_comid_list=reservoir_comid_list,
                      merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list,
                      use_chunked_template=use_chunked_template)

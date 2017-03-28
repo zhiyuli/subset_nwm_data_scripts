@@ -66,6 +66,7 @@ def subset_nwm_netcdf(job_id=None,
                       data_type=None,
                       model_type=None,
                       file_type=None,
+                      time_stamp_list=None,
                       input_folder_path=None,
                       output_folder_path=None,
                       template_folder_path=None,
@@ -165,15 +166,17 @@ def subset_nwm_netcdf(job_id=None,
                     raise NotImplementedError("terrain")
             else:
                 raise Exception("Invalid long_rang model type @: {0}".format(model_type))
+        else:
+            raise Exception("Invalid long_rang model type @: {0}".format(model_type))
 
     else:
         raise Exception("invalid data_type: {0}".format(data_type))
 
-    if use_merge_template:
-        cdl_template_filename += "_merge"
-
     if use_chunked_template:
         cdl_template_filename += "_chunked"
+
+    if use_merge_template:
+        cdl_template_filename += "_merge"
 
     if "long_range_mem" in model_type:
         # long_range uses same templates for all mem1-mem4
@@ -217,6 +220,11 @@ def subset_nwm_netcdf(job_id=None,
     #     render_cdl_file(content_list=content_list, file_path=cdl_file_path)
     #     create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
 
+    if type(time_stamp_list) is list and len(time_stamp_list) > 0:
+        for var in var_list:
+            if var[0] == "HH":
+                var[1] = time_stamp_list
+            break
     nc_file_name = nc_template_file_name
     nc_filename_list = [nc_file_name]
     for var in var_list:
@@ -330,7 +338,8 @@ def subset_nwm_netcdf(job_id=None,
 
 def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                  template_folder_path=None, simulation_date_list=None, data_type_list=None,
-                 model_type_list=None, file_type_list=None, grid_dict=None, stream_comid_list=None,
+                 model_type_list=None, file_type_list=None, time_stamp_list=None,
+                 grid_dict=None, stream_comid_list=None,
                  reservoir_comid_list=None,
                  merge_netcdfs=True, cleanup=True, write_file_list=None, template_version="v1.1",
                  use_chunked_template=True):
@@ -388,6 +397,7 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                         logger.info(log_str)
                         sim_start_dt = datetime.datetime.now()
                         logger.debug(sim_start_dt)
+
                         subset_nwm_netcdf(job_id=job_id,
                                           grid=grid_dict,
                                           comid_list=comid_list,
@@ -395,6 +405,7 @@ def start_subset(job_id=None, netcdf_folder_path=None, output_folder_path=None,
                                           data_type=data_type,
                                           model_type=model_type,
                                           file_type=file_type,
+                                          time_stamp_list=time_stamp_list,
                                           input_folder_path=netcdf_folder_path,
                                           output_folder_path=output_folder_path,
                                           template_folder_path=template_folder_path,

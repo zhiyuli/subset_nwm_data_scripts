@@ -4,7 +4,7 @@ dimensions:
 	time = UNLIMITED ; // (1 currently)
 	reference_time = 1 ;
 variables:
-	int time(time) ;
+    int time(time) ;
 		time:long_name = "valid output time" ;
 		time:standard_name = "time" ;
 		time:mising_value = -8.9999998e+15 ;
@@ -16,14 +16,14 @@ variables:
 		elevation:coordinates = "latitude longitude" ;
 		elevation:mising_value = -8.9999998e+15 ;
 		elevation:valid_range = -100, 25000 ;
-	float inflow(feature_id) ;
+	float inflow(time, feature_id) ;
 		inflow:_FillValue = -9.e+15f ;
 		inflow:units = "m3 s-1" ;
 		inflow:long_name = "Lake Inflow" ;
 		inflow:coordinates = "latitude longitude" ;
 		inflow:mising_value = -8.9999998e+15 ;
 		inflow:valid_range = -10000, 10000 ;
-	float outflow(feature_id) ;
+	float outflow(time, feature_id) ;
 		outflow:_FillValue = -9.e+15f ;
 		outflow:units = "m3 s-1" ;
 		outflow:long_name = "Lake Outflow" ;
@@ -41,7 +41,7 @@ variables:
 	int feature_id(feature_id) ;
 		feature_id:long_name = "Lake COMMON ID" ;
 		feature_id:comment = "ComID from NHDPlusV2 waterbody layer" ;
-	int reference_time(reference_time) ;
+	int reference_time(time, reference_time) ;
 		reference_time:long_name = "model initialization time" ;
 		reference_time:standard_name = "forecast_reference_time" ;
 		reference_time:units = "minutes since 1970-01-01 00:00:00 UTC" ;

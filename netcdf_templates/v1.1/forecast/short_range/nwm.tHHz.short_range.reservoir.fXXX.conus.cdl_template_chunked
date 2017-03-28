@@ -4,6 +4,11 @@ dimensions:
 	time = UNLIMITED ; // (1 currently)
 	reference_time = 1 ;
 variables:
+	int time(time) ;
+		time:long_name = "valid output time" ;
+		time:standard_name = "time" ;
+		time:mising_value = -8.9999998e+15 ;
+		time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
 	float elevation(feature_id) ;
 		elevation:_FillValue = -9.e+15f ;
 		elevation:long_name = "Water Surface Elevation" ;
@@ -25,11 +30,6 @@ variables:
 		outflow:coordinates = "latitude longitude" ;
 		outflow:mising_value = -8.9999998e+15 ;
 		outflow:valid_range = -10000, 10000 ;
-	int time(time) ;
-		time:long_name = "valid output time" ;
-		time:standard_name = "time" ;
-		time:mising_value = -8.9999998e+15 ;
-		time:units = "minutes since 1970-01-01 00:00:00 UTC" ;
 	float latitude(feature_id) ;
 		latitude:long_name = "Lake latitude" ;
 		latitude:units = "degrees_north" ;
