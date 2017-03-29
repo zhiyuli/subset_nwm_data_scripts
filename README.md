@@ -1,9 +1,10 @@
 # subset_nwm_netcdf
 
-This python library enables users to subset National Water Model (NWM) result netcdfs using a polygon.
+This python library enables users to subset National Water Model (NWM) NetCDFs Ver1.1 using a polygon.
 Functional testings passed in Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.
 
-Dependencies:
+#Dependencies:
+
 Query module:
 1) fiona @ https://pypi.python.org/pypi/Fiona
 2) shapely @ https://pypi.python.org/pypi/Shapely/
@@ -18,4 +19,10 @@ Subset & Merge module
 5) sed shell command
 
 
-Mote about NWM: http://water.noaa.gov/about/nwm
+More about NWM: http://water.noaa.gov/about/nwm
+
+Implementation inspired by:
+
+https://github.com/shawncrawley/subset_nwm_data_scripts
+
+https://github.com/twhiteaker/pynwm
