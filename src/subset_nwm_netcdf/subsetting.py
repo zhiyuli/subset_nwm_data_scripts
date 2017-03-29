@@ -12,8 +12,8 @@ import netCDF4
 
 
 logger = logging.getLogger(__name__)
-default_sed_win_path = os.path.join(os.path.dirname(__file__), "statics/sed_win/sed.exe")
-default_nc_templates_path = os.path.join(os.path.dirname(__file__), "statics/netcdf_templates")
+default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win/sed.exe")
+default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
 def _render_cdl_file(content_list=[], file_path=None):
     for item in content_list:
