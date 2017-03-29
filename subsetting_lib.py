@@ -9,6 +9,7 @@ import datetime
 
 logger = logging.getLogger('subset_netcdf')
 
+
 def subset_grid_file(in_nc_file=None, out_nc_file=None, grid_dict=None,
                      template_version="v1.1", netcdf_format="NETCDF4_CLASSIC"):
     try:

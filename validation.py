@@ -2,7 +2,11 @@ import uuid
 import os
 import arcpy
 from arcpy.sa import Raster
+import copy
+import netCDF4
+import numpy
 
+arcpy.CheckOutExtension("Spatial")
 
 def netcdf2raster(inNetCDF_Path, variable, XDimension, YDimension, bandDimmension="",
                   dimensionValues="", valueSelectionMethod="BY_INDEX", outRaterPath=None):
@@ -15,39 +19,93 @@ def netcdf2raster(inNetCDF_Path, variable, XDimension, YDimension, bandDimmensio
         if os.path.isfile(outRaterPath):
             os.remove(outRaterPath)
         arcpy.CopyRaster_management(out_mem_raster_layer_name,  outRaterPath, "", "", "", "NONE", "NONE", "")
-    return out_mem_raster_layer_name
+    return Raster(out_mem_raster_layer_name)
 
+
+def validate_netcdf_geo2d(inNetCDFFile_small=None, inNetCDFFile_big=None, variable=None,
+                          XDimension="x", YDimension="y", dimensionValues=None):
+
+    raster_small = netcdf2raster(inNetCDFFile_small, variable, XDimension, YDimension, dimensionValues=dimensionValues)
+    raster_big = netcdf2raster(inNetCDFFile_big, variable, XDimension, YDimension)
+
+    diff_raster = raster_big - raster_small
+    arcpy.CalculateStatistics_management(diff_raster)
+    if diff_raster.maximum != 0 or diff_raster.minimum != 0:
+        print "Data does not match @ {0}".format(inNetCDFFile_small)
+    else:
+        print "validation passed"
+    pass
+
+
+def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
+                       template_version="v1.1", netcdf_format="NETCDF4_CLASSIC"):
+    try:
+        if not os.path.isfile(big_nc_file):
+            raise Exception("big_nc_file missing @: {0}".format(big_nc_file))
+        elif not os.path.isfile(small_nc_file):
+            raise Exception("small_nc_file missing @: {0}".format(small_nc_file))
+
+        grid = copy.copy(grid_dict)
+        with netCDF4.Dataset(big_nc_file, mode='r', format=netcdf_format) as big_nc:
+            with netCDF4.Dataset(small_nc_file, mode='r', format=netcdf_format) as small_nc:
+
+                assert(big_nc.model_initialization_time == small_nc.model_initialization_time)
+                assert (big_nc.model_initialization_time == small_nc.model_initialization_time)
+                assert (big_nc.model_output_valid_time == small_nc.model_output_valid_time)
+                for name, var_obj in small_nc.variables.iteritems():
+
+                    if name in ['x', 'y']:
+                        var_x_or_y = var_obj
+                        assert (var_x_or_y[:] == big_nc.variables[name][grid['min{0}'.format(name.upper())]:
+                                                               grid['max{0}'.format(name.upper())] + 1])
+
+                    elif len(var_obj.dimensions) == 2:
+                        if var_obj.dimensions[0] != "time":
+                            raise Exception("unexpected variable")
+                        assert (var_obj[0][:] == big_nc.variables[name][:])
+
+                    elif len(var_obj.dimensions) == 3:
+
+                        if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                           or var_obj.dimensions[2] != "x":
+                            raise Exception("unexpected Geo2D variable")
+                        assert (numpy.all((var_obj[0] == big_nc.variables[name][0,
+                                                           grid['minY']:grid['maxY'] + 1,
+                                                           grid['minX']:grid['maxX'] + 1])==True))
+                    elif len(var_obj.dimensions) == 4:
+                        # medium range land file variable may have 4 dimensions
+
+                        if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                           or var_obj.dimensions[3] != "x":
+                            raise Exception("unexpected medium range Geo2D variable")
+                        assert (var_obj[0] == big_nc.variables[name][0,
+                                                           grid['minY']:grid['maxY'] + 1,
+                                                           :,
+                                                           grid['minX']:grid['maxX'] + 1])
+                    else:
+                        if len(var_obj.dimensions) > 0:
+                            assert (var_obj[:] == big_nc.variables[name][:])
+    except Exception as ex:
+       print (ex.message + small_nc)
 
 if __name__ == "__main__":
 
     try:
-        inNetCDFFile = "F:\\subset_nwm_windows\\subset_nwm_data_scripts\\temp\\c81a8a6f-c3c6-4454-bbe9-fa892b24beff\\nwm.20170323\\analysis_assim\\nwm.t20z.analysis_assim.land.tm00.conus.nc"
-        variable = "ACCET"
+        inNetCDFFile_small = r"F:\subset_nwm_windows\subset_nwm_data_scripts\temp\e1190328-ee8f-46cd-9d0b-c83299af85d2\nwm.20170327\analysis_assim\nwm.t01z.analysis_assim.land.tm00.conus.nc"
+        variable = "SNOWT_AVG"
         XDimension = "x"
         YDimension = "y"
-        outRaterPath = "F:\\subset_nwm_windows\\subset_nwm_data_scripts\\temp\\sub.tif"
+        dimensionValues = [["time", "23"]]
+        inNetCDFFile_big = "G:\\nwm_new_data\\nwm.20170327\\analysis_assim\\nwm.t01z.analysis_assim.land.tm00.conus.nc"
+        #
+        # validate_netcdf_geo2d(inNetCDFFile_big=inNetCDFFile_big,
+        #                       inNetCDFFile_small=inNetCDFFile_small,
+        #                       XDimension=XDimension,
+        #                       YDimension=YDimension,
+        #                       variable=variable,
+        #                       dimensionValues=dimensionValues)
+        grid_dict = {'minX': 1069, 'minY': 2184, 'maxX': 1103, 'maxY': 2219}
+        validate_grid_file(big_nc_file=inNetCDFFile_big, small_nc_file=inNetCDFFile_small, grid_dict=grid_dict,)
 
-        dimensionValues = [["time", "10"]]
-        raster_mem_sub = netcdf2raster(inNetCDFFile, variable, XDimension, YDimension, dimensionValues=dimensionValues)
-        print raster_mem_sub
-
-        inNetCDFFile = "G:\\nwm_new_data\\nwm.20170323\\analysis_assim\\nwm.t21z.analysis_assim.land.tm00.conus.nc"
-        variable = "ACCET"
-        XDimension = "x"
-        YDimension = "y"
-        outRaterPath = "F:\\subset_nwm_windows\\subset_nwm_data_scripts\\temp\\org.tif"
-
-        raster_mem_org = netcdf2raster(inNetCDFFile, variable, XDimension, YDimension)
-        print raster_mem_org
-
-        arcpy.CheckOutExtension("Spatial")
-        diff_raster = Raster(raster_mem_org) - Raster(raster_mem_sub)
-
-        arcpy.CalculateStatistics_management(diff_raster)
-        if diff_raster.maximum != 0 or diff_raster.minimum != 0:
-            print "Data does not match @ {0}".format(inNetCDFFile)
-        print "Done"
-        pass
     except Exception as ex:
-        print str(ex)
-        pass
+        print ex.messag
