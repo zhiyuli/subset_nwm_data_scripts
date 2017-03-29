@@ -1,16 +1,16 @@
 import logging
 import uuid
 import datetime
-from query_stream_and_grid import query_comids_and_grid_indices
-from subset_netcdf import start_subset
+from subset_nwm_netcdf.query import query_comids_and_grid_indices
+from subset_nwm_netcdf.subsetting import start_subset_nwm_netcdf_job
 
 job_id = str(uuid.uuid4())
 
 # create logger with 'subset_netcdf'
-logger = logging.getLogger('subset_netcdf')
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 # create file handler which logs even debug messages
-fh = logging.FileHandler('subset_netcdf_{job_id}.log'.format(job_id=job_id))
+fh = logging.FileHandler('subset_nwm_netcdf_{job_id}.log'.format(job_id=job_id))
 fh.setLevel(logging.DEBUG)
 # create console handler with a higher log level
 ch = logging.StreamHandler()
@@ -37,12 +37,12 @@ if __name__ == "__main__":
 
         db_epsg_code = 4269
 
-        # Shapefile utah
-        query_type = "shapefile"
-        shp_path = "./data/utah/utah_utm_nad83_zone_12.shp"
-        geom_str = None
-        in_epsg = None
-        huc_id = None
+        # # Shapefile utah
+        # query_type = "shapefile"
+        # shp_path = "./statics/data/utah/utah_utm_nad83_zone_12.shp"
+        # geom_str = None
+        # in_epsg = None
+        # huc_id = None
 
         # # geojson
         # query_type = "geojson"
@@ -60,12 +60,12 @@ if __name__ == "__main__":
         # in_epsg = 26912
         # huc_id = None
         #
-        # # huc 12
-        # query_type = "huc_12"
-        # shp_path = None
-        # geom_str = None
-        # in_epsg = None
-        # huc_id = "160102040504"
+        # huc 12
+        query_type = "huc_12"
+        shp_path = None
+        geom_str = None
+        in_epsg = None
+        huc_id = "160102040504"
         #
         # # huc 10
         # query_type = "huc_10"
@@ -81,8 +81,9 @@ if __name__ == "__main__":
         # in_epsg = None
         # huc_id = "16020306"
 
-        query_result_dict = query_comids_and_grid_indices(db_file_path=db_file_path, db_epsg_code=db_epsg_code,
-                                                          job_id=job_id, query_type=query_type, shp_path=shp_path,
+        query_result_dict = query_comids_and_grid_indices(job_id=job_id, db_file_path=db_file_path,
+                                                          db_epsg_code=db_epsg_code,
+                                                          query_type=query_type, shp_path=shp_path,
                                                           geom_str=geom_str, in_epsg=in_epsg, huc_id=huc_id)
         if query_result_dict is None:
             raise Exception("Failed to retrieve spatial query result")
@@ -96,12 +97,10 @@ if __name__ == "__main__":
         #netcdf_folder_path = "/media/sf_nwm_new_data"
 
         output_folder_path = "./temp"
-        template_folder_path = "./netcdf_templates"
-        template_version = "v1.1"
         merge_netcdfs = True
         cleanup = True
         use_chunked_template = True
-        simulation_date_list = ["20170327"]
+        simulation_date_list = ["20170328"]
         data_type_list = ["forecast", 'forcing']
         #data_type_list = ["forecast"]
         model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
@@ -120,13 +119,13 @@ if __name__ == "__main__":
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
 
-        start_subset(job_id=job_id, netcdf_folder_path=netcdf_folder_path, output_folder_path=output_folder_path,
-                     template_folder_path=template_folder_path, simulation_date_list=simulation_date_list,
-                     data_type_list=data_type_list, model_type_list=model_type_list, file_type_list=file_type_list,
-                     time_stamp_list=time_stamp_list,
-                     grid_dict=grid_dict, stream_comid_list=stream_comid_list, reservoir_comid_list=reservoir_comid_list,
-                     merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list,
-                     use_chunked_template=use_chunked_template)
+        start_subset_nwm_netcdf_job(job_id=job_id, netcdf_folder_path=netcdf_folder_path, output_folder_path=output_folder_path,
+                                     simulation_date_list=simulation_date_list,
+                                     data_type_list=data_type_list, model_type_list=model_type_list, file_type_list=file_type_list,
+                                     time_stamp_list=time_stamp_list,
+                                     grid_dict=grid_dict, stream_comid_list=stream_comid_list, reservoir_comid_list=reservoir_comid_list,
+                                     merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list,
+                                     use_chunked_template=use_chunked_template)
 
     except Exception as ex:
         logger.exception(ex.message)

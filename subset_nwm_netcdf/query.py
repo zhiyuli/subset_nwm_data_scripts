@@ -9,12 +9,7 @@ import exceptions
 import logging
 import datetime
 
-logger = logging.getLogger("subset_netcdf")
-
-# # db file full path
-# db_file = "./nwm.sqlite"
-# # the default espg code in db
-# db_epsg = 4269
+logger = logging.getLogger(__name__)
 
 
 def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=None,
@@ -51,14 +46,14 @@ def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=N
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
-            shape_obj, in_epsg_checked = get_shapely_shape_obj(db_file=db_file_path, query_type_lower=query_type_lower,
-                                                               in_epsg=in_epsg, shp_path=shp_path, geom_str=geom_str)
+            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path, query_type_lower=query_type_lower,
+                                                                in_epsg=in_epsg, shp_path=shp_path, geom_str=geom_str)
         elif "huc" in query_type_lower:
 
-            shape_obj, in_epsg_checked = get_huc_bbox_shapely_shape_obj(db_file=db_file_path,
-                                                                        db_epsg=db_epsg_code,
-                                                                        huc_type=query_type_lower,
-                                                                        huc_id=huc_id)
+            shape_obj, in_epsg_checked = _get_huc_bbox_shapely_shape_obj(db_file=db_file_path,
+                                                                         db_epsg=db_epsg_code,
+                                                                         huc_type=query_type_lower,
+                                                                         huc_id=huc_id)
         elif "stream" == query_type_lower:
             raise exceptions.NotImplementedError()
 
@@ -71,13 +66,13 @@ def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=N
             raise Exception("Input Geometry is not Polygon")
 
         polygon_query_window = shapely.geometry.Polygon(polygon_exterior_linearring)
-        data = perform_spatial_query(db_file=db_file_path,
-                                     db_epsg=db_epsg_code,
-                                     query_window_wkt=polygon_query_window.wkt,
-                                     input_epsg=in_epsg_checked,
-                                     query_stream=query_stream,
-                                     query_grid=query_grid,
-                                     query_reservoir=query_reservoir)
+        data = _perform_spatial_query(db_file=db_file_path,
+                                      db_epsg=db_epsg_code,
+                                      query_window_wkt=polygon_query_window.wkt,
+                                      input_epsg=in_epsg_checked,
+                                      query_stream=query_stream,
+                                      query_grid=query_grid,
+                                      query_reservoir=query_reservoir)
 
         logger.info("grid: {0}".format(str(data["grid_land"])))
         dim_x_len = data["grid_land"]['maxX'] - data["grid_land"]['minX'] + 1
@@ -99,12 +94,12 @@ def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=N
         logger.info("--------------- Spatial Query Done----------------")
 
 
-def get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
+def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
 
     if query_type_lower is None:
         raise Exception("Parameter 'query_type_lower' is not given")
 
-    if in_epsg is not None and not check_supported_epsg(epsg=in_epsg, db_file=db_file):
+    if in_epsg is not None and not _check_supported_epsg(epsg=in_epsg, db_file=db_file):
         raise Exception("A invalid/unsupported epsg code is given")
 
     in_epsg_checked = in_epsg
@@ -119,7 +114,7 @@ def get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp
             logger.info("User did not declare epsg code for this shapefile. Trying to extract epsg code from shapefile prj file....")
             if "init" in shp_obj.crs:
                 epsg = shp_obj.crs["init"].split(":")[1]
-                if check_supported_epsg(epsg=epsg, db_file=db_file):
+                if _check_supported_epsg(epsg=epsg, db_file=db_file):
                     in_epsg_checked = int(epsg)
                     logger.info("epsg: {0}".format(str(in_epsg_checked)))
                 else:
@@ -156,7 +151,7 @@ def get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp
     return shape_obj, in_epsg_checked
 
 
-def check_supported_epsg(epsg=None, db_file=None):
+def _check_supported_epsg(epsg=None, db_file=None):
 
     conn = None
     try:
@@ -176,7 +171,7 @@ def check_supported_epsg(epsg=None, db_file=None):
             conn.close()
 
 
-def perform_spatial_query(db_file=None,
+def _perform_spatial_query(db_file=None,
                           db_epsg=None,
                           query_window_wkt=None,
                           input_epsg=None,
@@ -261,7 +256,7 @@ def perform_spatial_query(db_file=None,
             conn.close()
 
 
-def get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, huc_id=None):
+def _get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, huc_id=None):
 
     if huc_type not in ["huc_8", "huc_10", "huc_12"]:
         raise Exception("Only support huc_8, huc_10 and huc_12")
@@ -272,14 +267,14 @@ def get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, hu
     elif huc_type == "huc_12" and len(huc_id) != 12:
         raise Exception("Invalid huc_12 comid")
 
-    huc_wkt = query_huc(db_file=db_file, huc_type=huc_type, huc_id=huc_id)
+    huc_wkt = _query_huc(db_file=db_file, huc_type=huc_type, huc_id=huc_id)
 
     shape_obj = shapely.wkt.loads(huc_wkt)
 
     return shape_obj, db_epsg
 
 
-def query_huc(db_file=None, huc_type=None, huc_id=None):
+def _query_huc(db_file=None, huc_type=None, huc_id=None):
 
     # sql_str_comids = 'select station_id from stream where {huc_type} = "{huc_id}"'.format(huc_type=huc_type.upper(),
     #                                                                                       huc_id=huc_id)
@@ -301,31 +296,3 @@ def query_huc(db_file=None, huc_type=None, huc_id=None):
     finally:
         if conn is not None:
             conn.close()
-
-
-# if __name__ == "__main__":
-#
-#     shp_path = "/home/drew/Desktop/state/utah_utm_nad83_zone_12.shp"
-#     #shp_path = "/home/drew/Desktop/state/state_local.shp"
-#     query_comids_and_grid_indices(query_type="shapefile", shp_path=shp_path)
-#
-#     # geojson_str = '{"type":"Polygon",' \
-#     #               '"coordinates":[[[-109.436035, 43.011979],[-93.361976,42.599528],' \
-#     #               '[-92.768481,34.295595],[-111.418367,34.515505],[-109.436035, 43.011979]]]}'
-#     # input_epsg=4326
-#     # query_comids_and_grid_indices(query_type="geojson",
-#     #                                     geom_str=geojson_str,
-#     #                                     in_epsg=input_epsg)
-#
-#
-#     # input_wkt = "POLYGON((500000 4316776.583097936,500000 4427757.218624833,585360.4618433624 4428236.064519553,586592.6780279021 4317252.164517585,500000 4316776.583097936))"
-#     # input_epsg = "26912"
-#     # query_comids_and_grid_indices(query_type="wkt",
-#     #                                     geom_str=input_wkt,
-#     #                                     in_epsg=input_epsg)
-#
-#     #query_comids_and_grid_indices(query_type="huc_12", huc_id="030902040700")
-#     #query_comids_and_grid_indices(query_type="huc_10", huc_id="1210030202")
-#     #query_comids_and_grid_indices(query_type="huc_8", huc_id="18090203")
-#
-#     pass
