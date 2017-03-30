@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='subset_nwm_netcdf',
-      version='1.2',
+      version='1.2.1',
       description='Subset NWM netcdf ver1.1',
       url='https://github.com/zhiyuli/subset_nwm_netcdf',
       author='Zhiyu/Drew Li',

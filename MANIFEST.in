@@ -1,2 +1,3 @@
 include README.md
+include src/demo.py
 recursive-include src/subset_nwm_netcdf/static *
