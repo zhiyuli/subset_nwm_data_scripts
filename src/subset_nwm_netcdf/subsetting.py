@@ -11,7 +11,7 @@ import numpy
 import netCDF4
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('subset_nwm_netcdf')
 default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win/sed.exe")
 default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
@@ -21,13 +21,11 @@ def _render_cdl_file(content_list=[], file_path=None):
 
 
 def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
-    # subprocess.call(['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path])
     if "windows" in platform.system().lower():
         sed_cmd = [default_sed_win_path, "-i", "s/{0}/{1}/g".format(search_text, replace_text), file_path]
-    elif "linux" in platform.system().lower():
-        sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
     else:
-        raise Exception("Unsupported OS")
+        sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
+
     proc = subprocess.Popen(sed_cmd,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
@@ -35,11 +33,19 @@ def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
                             )
     proc.wait()
     stdout, stderr = proc.communicate()
+
+    if "windows" in platform.system().lower():
+        # remove 'sedXXXXX' files created by sed, which is a unresolved bug of gnu sed on windows
+        # see: https://sourceforge.net/p/gnuwin32/bugs/500/
+        pattern = re.compile("sed\w\w\w\w\w")
+        folder_content_list = os.listdir("./")
+        [os.remove(fn) for fn in folder_content_list if pattern.match(fn) and os.path.isfile(fn)]
+
     if stdout:
-        logger.error(stdout)
+        logger.error(stdout.rstrip())
         raise Exception(" replace_text_in_file() error @ {0}".format(file_path))
     if stderr:
-        logger.error(stderr)
+        logger.error(stderr.rstrip())
         raise Exception(" replace_text_in_file() error @ {0}".format(file_path))
 
 
@@ -55,10 +61,10 @@ def _create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True):
     proc.wait()
     stdout, stderr = proc.communicate()
     if stdout:
-        logger.error(stdout)
+        logger.error(stdout.rstrip())
         raise Exception(" create_nc_from_cdf() error @ {0}".format(cdl_file))
     if stderr:
-        logger.error(stderr)
+        logger.error(stderr.rstrip())
         raise Exception(" create_nc_from_cdf() error @ {0}".format(cdl_file))
 
     if remove_cdl:
@@ -220,6 +226,12 @@ def _subset_nwm_netcdf(job_id=None,
         nc_filename_list = nc_filename_list_new
 
     # write wget download list file
+    # write_file_list = None
+    # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
+    #                     "save_to_path_base": "/projects/water/nwm/new_data/pub/data/nccf/com/nwm/para/"}
+    # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
+    #                    "save_to_path_base": "/cygdrive/f/nwm_new_data/"}
+
     if type(write_file_list) is dict:
         url_base = write_file_list["url_base"] + "nwm.$simulation_date/"
         save_to_path_base = os.path.join(write_file_list["save_to_path_base"],
@@ -299,8 +311,8 @@ def _subset_nwm_netcdf(job_id=None,
            data_type == "forecast" and file_type == "land":
 
             _subset_grid_file(in_nc_file=in_nc_file,
-                             out_nc_file=out_nc_file,
-                             grid_dict=grid)
+                              out_nc_file=out_nc_file,
+                              grid_dict=grid)
 
         elif data_type == "forecast" and (file_type == "channel" or file_type == "reservoir"):
 
@@ -316,13 +328,46 @@ def _subset_nwm_netcdf(job_id=None,
         shutil.rmtree(out_nc_folder_template_path)
 
 
-def start_subset_nwm_netcdf_job(job_id=None, netcdf_folder_path=None, output_folder_path=None,
-                     template_folder_path=None, simulation_date_list=None, data_type_list=None,
-                     model_type_list=None, file_type_list=None, time_stamp_list=None,
-                     grid_dict=None, stream_comid_list=None,
-                     reservoir_comid_list=None,
-                     merge_netcdfs=True, cleanup=True, write_file_list=None, template_version="v1.1",
-                     use_chunked_template=True):
+def start_subset_nwm_netcdf_job(job_id=None,
+                                netcdf_folder_path=None,
+                                output_folder_path=None,
+                                simulation_date_list=None,
+                                data_type_list=None,
+                                model_type_list=None,
+                                file_type_list=None,
+                                time_stamp_list=None,
+                                grid_dict=None,
+                                stream_comid_list=None,
+                                reservoir_comid_list=None,
+                                merge_netcdfs=True,
+                                cleanup=True,
+                                template_folder_path=None,
+                                write_file_list=None,
+                                template_version="v1.1",
+                                use_chunked_template=True):
+    """
+
+    :param job_id: used as result folder name
+    :param netcdf_folder_path: original NWM netcdf folder
+    :param output_folder_path: output result base path
+    :param template_folder_path: optional, path to netcdf template folder
+    :param simulation_date_list: list of date strings ["20170327", "20170328"]
+    :param data_type_list:  ["forecast", 'forcing']
+    :param model_type_list: ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
+                            "long_range": long_range_mem1-4,
+                            "long_range_mem4": indicate a specific long_range_mem model
+    :param file_type_list: ['channel', 'reservoir', 'land']
+    :param time_stamp_list: [1, 2, ...];  [] or None means all default time stamps
+    :param grid_dict: {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param stream_comid_list: [comid1, comid2, ...]
+    :param reservoir_comid_list: [comid1, comid2, ....]
+    :param merge_netcdfs: True: merge netcdf after subsetting
+    :param cleanup: remove intermediate files and only keep merged netcdfs
+    :param write_file_list: internal testing purpose, ignore this parameter
+    :param template_version: "v1.1"
+    :param use_chunked_template: True: default
+    :return: no value returned
+    """
 
     logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
     if template_folder_path is None:
@@ -382,21 +427,21 @@ def start_subset_nwm_netcdf_job(job_id=None, netcdf_folder_path=None, output_fol
                         logger.debug(sim_start_dt)
 
                         _subset_nwm_netcdf(job_id=job_id,
-                                          grid=grid_dict,
-                                          comid_list=comid_list,
-                                          simulation_date=simulation_date,
-                                          data_type=data_type,
-                                          model_type=model_type,
-                                          file_type=file_type,
-                                          time_stamp_list=time_stamp_list,
-                                          input_folder_path=netcdf_folder_path,
-                                          output_folder_path=output_folder_path,
-                                          template_folder_path=template_folder_path,
-                                          template_version=template_version,
-                                          write_file_list=write_file_list,
-                                          use_merge_template=merge_netcdfs,
-                                          cleanup=cleanup,
-                                          use_chunked_template=use_chunked_template)
+                                           grid=grid_dict,
+                                           comid_list=comid_list,
+                                           simulation_date=simulation_date,
+                                           data_type=data_type,
+                                           model_type=model_type,
+                                           file_type=file_type,
+                                           time_stamp_list=time_stamp_list,
+                                           input_folder_path=netcdf_folder_path,
+                                           output_folder_path=output_folder_path,
+                                           template_folder_path=template_folder_path,
+                                           template_version=template_version,
+                                           write_file_list=write_file_list,
+                                           use_merge_template=merge_netcdfs,
+                                           cleanup=cleanup,
+                                           use_chunked_template=use_chunked_template)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
                         sim_elapsed = sim_end_dt - sim_start_dt
@@ -415,9 +460,9 @@ def start_subset_nwm_netcdf_job(job_id=None, netcdf_folder_path=None, output_fol
         merge_start_dt = datetime.datetime.now()
         logger.debug(merge_start_dt)
         for simulation_date in subset_work_dict["simulation_date"]:
-            logger.info("Merging {0}-------------------------------".format(simulation_date))
+            logger.info("----------------------Merging {0}".format(simulation_date))
             merge_nwm_netcdf(input_base_path=os.path.join(output_folder_path, job_id, "nwm.{0}".format(simulation_date)),
-                         cleanup=cleanup)
+                             cleanup=cleanup)
         merge_end_dt = datetime.datetime.now()
         logger.debug(merge_end_dt)
         merge_elapse_dt = merge_end_dt - merge_start_dt
@@ -426,8 +471,11 @@ def start_subset_nwm_netcdf_job(job_id=None, netcdf_folder_path=None, output_fol
     pass
 
 
-def _subset_grid_file(in_nc_file=None, out_nc_file=None, grid_dict=None,
-                     template_version="v1.1", netcdf_format="NETCDF4_CLASSIC"):
+def _subset_grid_file(in_nc_file=None,
+                      out_nc_file=None,
+                      grid_dict=None,
+                      template_version="v1.1",
+                      netcdf_format="NETCDF4_CLASSIC"):
     try:
         if not os.path.isfile(in_nc_file):
             raise Exception("in_nc_file missing @: {0}".format(in_nc_file))
@@ -513,8 +561,14 @@ def _test_read_indirect_direct(direct_read=None, in_nc=None, var_name=None, inde
     return direct_read
 
 
-def _subset_comid_file(in_nc_file=None, out_nc_file=None, comid_list=None, index_list=None, reuse_comid_and_index=False,
-                      template_version="v1.1", netcdf_format="NETCDF4_CLASSIC", direct_read=None):
+def _subset_comid_file(in_nc_file=None,
+                       out_nc_file=None,
+                       comid_list=None,
+                       index_list=None,
+                       reuse_comid_and_index=False,
+                       template_version="v1.1",
+                       netcdf_format="NETCDF4_CLASSIC",
+                       direct_read=None):
     try:
         if not os.path.isfile(in_nc_file):
             raise Exception("in_nc_file missing @: {0}".format(in_nc_file))
@@ -601,7 +655,6 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
     folder_list = ["forcing_analysis_assim", "forcing_short_range", "forcing_medium_range",
                     "analysis_assim", "short_range", "medium_range",
                     "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
-    #folder_list = ["forcing_medium_range"]
 
     file_type_list = ["channel", "reservoir", "land"]
 
@@ -626,9 +679,15 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                 XXX_re_list = ["\d\d\d"]
                 XXX_merged_list = ["ALL"]
 
-            _perform_merge(HH_re_list=HH_re_list, HH_merged_list=HH_merged_list, XXX_re_list=XXX_re_list,
-                          XXX_merged_list=XXX_merged_list, input_base_path=input_base_path, model=model,
-                          fn_template=fn_template, output_base_path=output_base_path, cleanup=cleanup)
+            _perform_merge(HH_re_list=HH_re_list,
+                           HH_merged_list=HH_merged_list,
+                           XXX_re_list=XXX_re_list,
+                           XXX_merged_list=XXX_merged_list,
+                           input_base_path=input_base_path,
+                           model=model,
+                           fn_template=fn_template,
+                           output_base_path=output_base_path,
+                           cleanup=cleanup)
         else:
             for file_type in file_type_list:
                 if "analysis_assim" in model:
@@ -690,14 +749,27 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                         raise NotImplementedError()
                 log_str = "Merging {model}-{file_type}".format(model=model, file_type=file_type)
                 logger.info(log_str)
-                _perform_merge(HH_re_list=HH_re_list, HH_merged_list=HH_merged_list, XXX_re_list=XXX_re_list,
-                              XXX_merged_list=XXX_merged_list, input_base_path=input_base_path, model=model,
-                              fn_template=fn_template, output_base_path=output_base_path, cleanup=cleanup)
+                _perform_merge(HH_re_list=HH_re_list,
+                               HH_merged_list=HH_merged_list,
+                               XXX_re_list=XXX_re_list,
+                               XXX_merged_list=XXX_merged_list,
+                               input_base_path=input_base_path,
+                               model=model,
+                               fn_template=fn_template,
+                               output_base_path=output_base_path,
+                               cleanup=cleanup)
     pass
 
 
-def _perform_merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_merged_list=None, input_base_path=None,
-                   model=None, fn_template=None, output_base_path=None, cleanup=True):
+def _perform_merge(HH_re_list=None,
+                   HH_merged_list=None,
+                   XXX_re_list=None,
+                   XXX_merged_list=None,
+                   input_base_path=None,
+                   model=None,
+                   fn_template=None,
+                   output_base_path=None,
+                   cleanup=True):
 
     ncrcat_cmd_base = ["ncrcat", "-h"]
     for i in range(len(HH_re_list)):
@@ -736,12 +808,12 @@ def _perform_merge(HH_re_list=None, HH_merged_list=None, XXX_re_list=None, XXX_m
                     proc.wait()
                     stdout, stderr = proc.communicate()
                     if stdout:
-                        logger.debug(stdout)
+                        logger.debug(stdout.rstrip())
                     if stderr:
                         if "INFO/WARNING".lower() in stderr.lower():
-                            logger.debug(stderr)
+                            logger.debug(stderr.rstrip())
                         else:
-                            logger.error(stderr)
+                            logger.error(stderr.rstrip())
                             logger.error(str(ncrcat_cmd))
 
                     if cleanup:

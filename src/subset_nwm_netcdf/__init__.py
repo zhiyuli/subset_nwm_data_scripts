@@ -1,4 +1,3 @@
-import logging
 
 __author__ = "Zhiyu/Drew Li"
 version = (1, 1, 0)

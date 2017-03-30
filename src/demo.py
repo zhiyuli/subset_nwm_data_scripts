@@ -31,11 +31,9 @@ if __name__ == "__main__":
     try:
         # Windows
         db_file_path = "F:/NWM/DB/nwm.sqlite"
-
         # Linux
         #db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
-        db_epsg_code = 4269
 
         # # Shapefile utah
         # query_type = "shapefile"
@@ -52,28 +50,28 @@ if __name__ == "__main__":
         #            '[-92.768481,34.295595],[-111.418367,34.515505],[-109.436035, 43.011979]]]}'
         # in_epsg = 4326
         # huc_id = None
-        #
+
         # # wkt
         # query_type = "wkt"
         # shp_path = None
         # geom_str = "POLYGON((500000 4316776.583097936,500000 4427757.218624833,585360.4618433624 4428236.064519553,586592.6780279021 4317252.164517585,500000 4316776.583097936))"
         # in_epsg = 26912
         # huc_id = None
-        #
+
         # huc 12
         query_type = "huc_12"
         shp_path = None
         geom_str = None
         in_epsg = None
         huc_id = "160102040504"
-        #
+
         # # huc 10
         # query_type = "huc_10"
         # shp_path = None
         # geom_str = None
         # in_epsg = None
         # huc_id = "1210030202"
-        #
+
         # # huc 8
         # query_type = "huc_8"
         # shp_path = None
@@ -81,17 +79,17 @@ if __name__ == "__main__":
         # in_epsg = None
         # huc_id = "16020306"
 
-        query_result_dict = query_comids_and_grid_indices(job_id=job_id, db_file_path=db_file_path,
-                                                          db_epsg_code=db_epsg_code,
-                                                          query_type=query_type, shp_path=shp_path,
-                                                          geom_str=geom_str, in_epsg=in_epsg, huc_id=huc_id)
+        query_result_dict = query_comids_and_grid_indices(job_id=job_id,
+                                                          db_file_path=db_file_path,
+                                                          query_type=query_type,
+                                                          shp_path=shp_path,
+                                                          geom_str=geom_str,
+                                                          in_epsg=in_epsg,
+                                                          huc_id=huc_id)
         if query_result_dict is None:
             raise Exception("Failed to retrieve spatial query result")
 
-        #############################################################################################33
         # Windows
-        #netcdf_folder_path = "C:\\short_range\\rechunked"
-        #netcdf_folder_path = "C:\\short_range"
         netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
         #netcdf_folder_path = "/media/sf_nwm_new_data"
@@ -99,33 +97,32 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
         merge_netcdfs = True
         cleanup = True
-        use_chunked_template = True
-        simulation_date_list = ["20170328"]
-        data_type_list = ["forecast", 'forcing']
-        #data_type_list = ["forecast"]
-        model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_type_list = ['medium_range']
-        file_type_list = ['channel', 'reservoir', 'land']
-        #file_type_list = ['land']
+        simulation_date_list = ["20170327"]
+        #data_type_list = ["forecast", 'forcing']
+        data_type_list = ["forecast"]
+        #model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_type_list = ['analysis_assim']
+        #file_type_list = ['channel', 'reservoir', 'land']
+        file_type_list = ['land']
         time_stamp_list = []  # ["1, 2, ...];  [] or None means all default time stamps
-
-        write_file_list = None
-        # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
-        #                     "save_to_path_base": "/projects/water/nwm/new_data/pub/data/nccf/com/nwm/para/"}
-        # write_file_list = {"url_base": "http://para.nomads.ncep.noaa.gov/pub/data/nccf/com/nwm/para/",
-        #                    "save_to_path_base": "/cygdrive/f/nwm_new_data/"}
 
         grid_dict = query_result_dict["grid_land"]
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
 
-        start_subset_nwm_netcdf_job(job_id=job_id, netcdf_folder_path=netcdf_folder_path, output_folder_path=output_folder_path,
-                                     simulation_date_list=simulation_date_list,
-                                     data_type_list=data_type_list, model_type_list=model_type_list, file_type_list=file_type_list,
-                                     time_stamp_list=time_stamp_list,
-                                     grid_dict=grid_dict, stream_comid_list=stream_comid_list, reservoir_comid_list=reservoir_comid_list,
-                                     merge_netcdfs=merge_netcdfs, cleanup=cleanup, write_file_list=write_file_list,
-                                     use_chunked_template=use_chunked_template)
+        start_subset_nwm_netcdf_job(job_id=job_id,
+                                    netcdf_folder_path=netcdf_folder_path,
+                                    output_folder_path=output_folder_path,
+                                    simulation_date_list=simulation_date_list,
+                                    data_type_list=data_type_list,
+                                    model_type_list=model_type_list,
+                                    file_type_list=file_type_list,
+                                    time_stamp_list=time_stamp_list,
+                                    grid_dict=grid_dict,
+                                    stream_comid_list=stream_comid_list,
+                                    reservoir_comid_list=reservoir_comid_list,
+                                    merge_netcdfs=merge_netcdfs,
+                                    cleanup=cleanup)
 
     except Exception as ex:
         logger.exception(ex.message)

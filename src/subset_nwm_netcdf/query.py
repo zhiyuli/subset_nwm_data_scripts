@@ -1,30 +1,45 @@
 import os
 import json
-import fiona
-import shapely.wkt
-import shapely.geometry
-#import pyspatialite.dbapi2 as db
-import pysqlite2.dbapi2 as db
 import exceptions
 import logging
 import datetime
 
-logger = logging.getLogger(__name__)
+import fiona
+import shapely.wkt
+import shapely.geometry
+# import pyspatialite.dbapi2 as db
+import pysqlite2.dbapi2 as db
 
 
-def query_comids_and_grid_indices(db_file_path=None, db_epsg_code=4269, job_id=None,
-                                  query_type="shapefile", shp_path=None, geom_str=None,
-                                  in_epsg=None, huc_id=None, stream_list=[]):
+logger = logging.getLogger('subset_nwm_netcdf')
+
+
+def query_comids_and_grid_indices(job_id=None,
+                                  db_file_path=None,
+                                  db_epsg_code=4269,
+                                  query_type="shapefile",
+                                  shp_path=None,
+                                  geom_str=None,
+                                  in_epsg=None,
+                                  huc_id=None,
+                                  stream_list=[]):
 
     '''
-
-    :param in_type: shapefile, wkt, geojson, huc_8, huc_10, huc_12, stream
+    Query stream comids, reservoir comids and grid cells using a polygon
+    :param db_file_path: full path to NWM spatialite geodatabase file
+    :param db_epsg_code: the epsg code of NWM spatialite geodatabase (default 4269)
+    :param job_id: a job identifier
+    :param query_type: "shapefile", "wkt", "geojson", "huc_12", "huc_10", "huc_8", "stream"
     :param shp_path: full path to *.shp file
-    :param geom_str: geojson str or wkt str
-    :param in_epsg: projection of shapefile or geom_str
-    :param huc_id: huc id (huc 8 ,10 ,12)
-    :param stream_list: list of stream comid
-    :return:
+    :param geom_str: wkt or geojson string
+    :param in_epsg: epsg code of geom_str or shapefile
+    :param huc_id: comid of a huc watershed, of which the geometry will used as querying polygon
+    :param stream_list: not implemented yet, keep unchanged
+    :return: a dict contains query results:
+                        { "grid_land" {"minx": 11, "maxX": 22, "minY": 33, "maxY": 44},
+                           "stream": {"count": 500, "comids": []},
+                           "reservoir": {"count": 500, "comids": []}
+                        }
     '''
 
     logger.info("---------------Performing Spatial Query {0}----------------".format(job_id))

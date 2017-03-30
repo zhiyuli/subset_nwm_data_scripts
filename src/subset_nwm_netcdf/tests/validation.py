@@ -91,21 +91,21 @@ def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
 if __name__ == "__main__":
 
     try:
-        inNetCDFFile_small = r"F:\subset_nwm_windows\subset_nwm_data_scripts\temp\e1190328-ee8f-46cd-9d0b-c83299af85d2\nwm.20170327\analysis_assim\nwm.t01z.analysis_assim.land.tm00.conus.nc"
+        inNetCDFFile_small = r"C:\demo_subset_nwm_netcdf\temp\0128a466-443a-41f6-8f17-b6b98a500dd1\nwm.20170328\analysis_assim\nwm.tALLz.analysis_assim.land.tm00.conus.nc"
         variable = "SNOWT_AVG"
         XDimension = "x"
         YDimension = "y"
-        dimensionValues = [["time", "23"]]
+        dimensionValues = [["time", "1"]]
         inNetCDFFile_big = "G:\\nwm_new_data\\nwm.20170327\\analysis_assim\\nwm.t01z.analysis_assim.land.tm00.conus.nc"
-        #
-        # validate_netcdf_geo2d(inNetCDFFile_big=inNetCDFFile_big,
-        #                       inNetCDFFile_small=inNetCDFFile_small,
-        #                       XDimension=XDimension,
-        #                       YDimension=YDimension,
-        #                       variable=variable,
-        #                       dimensionValues=dimensionValues)
-        grid_dict = {'minX': 1069, 'minY': 2184, 'maxX': 1103, 'maxY': 2219}
-        validate_grid_file(big_nc_file=inNetCDFFile_big, small_nc_file=inNetCDFFile_small, grid_dict=grid_dict,)
+
+        validate_netcdf_geo2d(inNetCDFFile_big=inNetCDFFile_big,
+                              inNetCDFFile_small=inNetCDFFile_small,
+                              XDimension=XDimension,
+                              YDimension=YDimension,
+                              variable=variable,
+                              dimensionValues=dimensionValues)
+        # grid_dict = {'minX': 1069, 'minY': 2184, 'maxX': 1103, 'maxY': 2219}
+        # validate_grid_file(big_nc_file=inNetCDFFile_big, small_nc_file=inNetCDFFile_small, grid_dict=grid_dict,)
 
     except Exception as ex:
         print ex.messag
