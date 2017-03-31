@@ -8,13 +8,15 @@ import numpy
 
 arcpy.CheckOutExtension("Spatial")
 
+
 def netcdf2raster(inNetCDF_Path, variable, XDimension, YDimension, bandDimmension="",
                   dimensionValues="", valueSelectionMethod="BY_INDEX", outRaterPath=None):
 
     out_mem_raster_layer_name = str(uuid.uuid4())
 
     # Execute MakeNetCDFRasterLayer
-    arcpy.MakeNetCDFRasterLayer_md(inNetCDF_Path, variable, XDimension, YDimension, out_mem_raster_layer_name, bandDimmension, dimensionValues, valueSelectionMethod)
+    arcpy.MakeNetCDFRasterLayer_md(inNetCDF_Path, variable, XDimension, YDimension, out_mem_raster_layer_name,
+                                   bandDimmension, dimensionValues, valueSelectionMethod)
     if outRaterPath is not None:
         if os.path.isfile(outRaterPath):
             os.remove(outRaterPath)
@@ -88,6 +90,7 @@ def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
     except Exception as ex:
        print (ex.message + small_nc)
 
+
 if __name__ == "__main__":
 
     try:
@@ -96,7 +99,7 @@ if __name__ == "__main__":
         XDimension = "x"
         YDimension = "y"
         dimensionValues = [["time", "1"]]
-        inNetCDFFile_big = "G:\\nwm_new_data\\nwm.20170327\\analysis_assim\\nwm.t01z.analysis_assim.land.tm00.conus.nc"
+        inNetCDFFile_big = r"G:\nwm_new_data\\nwm.20170327\\analysis_assim\\nwm.t01z.analysis_assim.land.tm00.conus.nc"
 
         validate_netcdf_geo2d(inNetCDFFile_big=inNetCDFFile_big,
                               inNetCDFFile_small=inNetCDFFile_small,

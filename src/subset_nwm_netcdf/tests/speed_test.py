@@ -1,9 +1,6 @@
 import netCDF4
-import os
-import copy
 import numpy
 import datetime
-from scipy.cluster.vq import vq, kmeans, whiten
 import matplotlib.pyplot as plt
 
 def _get_comid_indices(find_comids, all_comids):
@@ -23,77 +20,61 @@ if __name__ == "__main__":
 
     stream_comid_list_small = [4913372, 4913370, 4912304, 4913362, 4913360, 4912224, 4912202, 4913348, 4912108, 4912088, 4912076, 4912018, 4911958, 4911926, 4911882, 4911770, 4911768, 162148444, 162148445, 4911680, 4911648, 4911634, 4911630, 4911614, 4911578, 4911532, 4911418, 4911396, 4913292, 4911294, 4911272, 4911260, 4911230, 4911226, 4911172, 4911158, 4913282, 4911136, 4911068, 4913272, 4911048, 4911042, 4908438, 4909850, 4909766, 4909760, 4909746, 4909744, 4909714, 4909706, 4908470, 4908462, 4908460, 4908456, 4908446, 4908440, 4913308, 4911584, 4911564, 4911550, 4911530, 4911540, 4911554, 4911556, 4911526, 4911434, 4911392, 4911384, 4911356, 4911328, 4911276, 4911270, 4911246, 4911228, 4911194, 4911166, 4911146, 4911112, 4912020, 4912016, 4913334, 4912012, 4911996, 4911990, 4911972, 4911968, 4911954, 4911934, 4911914, 4911888, 4911886, 4913352, 4912220, 4912210, 4912196, 4912192, 4912216, 4913346, 4912102, 4912104, 4913322, 4913296, 4909764, 4909712, 4909686, 4909678, 4908580, 4908578, 4908566, 4908514, 4908512, 4908502, 4908488, 4908478, 4908476, 4908448, 4908436, 4908464, 4908472, 4908442, 4908432, 4909718, 4909732, 4909754, 4909750, 4909846, 4909936, 4909942, 4909904, 4909924, 4910008, 4910278, 4910332, 4910078, 4910054, 4910034, 4909970, 4910024, 4910194, 4910192, 4910224, 4910276, 4913192, 4910412, 4911212, 4911126, 4911140, 4910870, 4910890, 4910976, 4911002, 4913302, 4910566, 4910458, 4912100, 4912096, 4913328, 4911880, 4911884, 4911872, 4911856, 4911874, 4911878, 4911870, 4911876, 4913318, 4913304, 4911594, 4911592, 4911308, 4909742, 4909700, 4909690, 4913426, 4908592, 4909672, 4908594, 4908596, 4908540, 4908556, 4908544, 4908524, 4908548, 4908552, 4908558, 4908584, 4908550, 4908522, 4908466, 4908454, 4908468, 4909748, 4909736, 4909762, 4909824, 4909986, 4909926, 4913232, 4913190, 4910330, 4910328, 4910222, 4910204, 4910178, 4910160, 4910070, 4910072, 4910036, 4910022, 4909966, 4910080, 4910150, 4910162, 4910206, 4910350, 4913258, 4911006, 4913268, 4911004, 4910978, 4911036, 4913270, 4913278, 4913280, 4911240, 4911264, 4911346, 4911358, 4911362, 4911364, 4911360, 4911350, 4911214, 4911144, 4911000, 4910974, 4910902, 4910892, 4910904, 4911366, 4911374, 4911460, 4911390, 4911378, 4911376, 4911372, 4911164, 4911104, 4911090, 4911138, 4911162, 4911160, 4911232, 4911262, 4911274, 4913288, 4911426, 4911534, 4910426, 4910400, 4910378, 4913194, 4911142, 4911436, 4913324, 4911696, 4911608, 4911474, 4911472, 4911750, 4911776, 4912644, 4912634, 4912642, 4912186, 4912188, 4912978, 4912934, 4912724, 4912442, 4910380, 4911130, 4911326, 4911570, 4911582, 4911588, 4911622, 4913314, 4911600, 4911580, 4911562, 4913330, 4913332, 4911950, 4911944, 4911930, 4911928, 4911924, 4911786, 4911778, 4911774, 4911748, 4911698, 4911684, 4911676, 4911626, 4911612, 4911606, 4911948, 4911988, 4912028, 4912120, 4912154, 4913354, 4913364, 4913374, 4912468, 4913382, 4912736, 4912460, 4912366, 4912872, 4912578, 4912562, 4912446, 4912404, 4911106, 4911122, 4911586, 4912094, 4911502, 4911388, 4911400, 4913294, 4911408, 4911500, 4911462, 4910152, 4911118, 4911120]
 
-    # stream_comid_list = stream_comid_list_big
-    # print "Num of streams: {0}".format(len(stream_comid_list))
-    #
-    # stream_comid_list_np = numpy.array(stream_comid_list)
-    # stream_comid_list_np.sort()
-    in_nc_file = r"G:\nwm_new_data\nwm.20170323\short_range\nwm.t00z.short_range.channel_rt.f003.conus.nc"
-    # for i in range(1, 10):
-    #     with netCDF4.Dataset(in_nc_file, mode='r', format="NETCDF4_CLASSIC") as in_nc:
-    #         index_list = _get_comid_indices(stream_comid_list_np, in_nc.variables['feature_id'][:])
-    #
-    #         # plt.hist(index_list)
-    #         # plt.show()
-    #
-    #         s = datetime.datetime.now()
-    #         all_data = in_nc.variables["streamflow"][:]
-    #         data_1 = all_data[index_list]
-    #         e = datetime.datetime.now()
-    #         print "data_1: {0}".format(e-s)
-    #
-    #         s = datetime.datetime.now()
-    #         data_2 = in_nc.variables["streamflow"][index_list]
-    #         e = datetime.datetime.now()
-    #         print "data_2: {0}".format(e-s)
-    #
-    #         diff = data_1 - data_2
-    #         print "Max value diff: {0}".format(numpy.amax(diff))
-    #         pass
+    stream_comid_list = stream_comid_list_big
+    print "Num of streams: {0}".format(len(stream_comid_list))
 
-    grid_dict = {}
+    stream_comid_list_np = numpy.array(stream_comid_list)
+    stream_comid_list_np.sort()
+
+    in_nc_file = "/media/sf_nwm_new_data/nwm.20170328/short_range/nwm.t00z.short_range.channel_rt.f003.conus.nc"
+    for i in range(1, 10):
+        with netCDF4.Dataset(in_nc_file, mode='r', format="NETCDF4_CLASSIC") as in_nc:
+            index_list = _get_comid_indices(stream_comid_list_np, in_nc.variables['feature_id'][:])
+
+            # plt.hist(index_list)
+            # plt.show()
+
+            s = datetime.datetime.now()
+            all_data = in_nc.variables["streamflow"][:]
+            data_1 = all_data[index_list]
+            e = datetime.datetime.now()
+            print "data_1: {0}".format(e-s)
+
+            s = datetime.datetime.now()
+            data_2 = in_nc.variables["streamflow"][index_list]
+            e = datetime.datetime.now()
+            print "data_2: {0}".format(e-s)
+
+            diff = data_1 - data_2
+            print "Max value diff: {0}".format(numpy.amax(diff))
+            pass
+
+    # grid_dict = {}
     # grid_dict["minX"] = 837
     # grid_dict["maxX"] = 1328
     # grid_dict["minY"] = 1673
     # grid_dict["maxY"] = 2279
-    grid_dict["minX"] = 0
-    grid_dict["maxX"] = 50
-    grid_dict["minY"] = 2000
-    grid_dict["maxY"] = 2050
-
-    x_range = range(0, 100, 2)
-    y_range = range(2000, 2100, 2)
-
-    grid = copy.copy(grid_dict)
-    in_nc_file = r"G:\nwm_new_data\nwm.20170323\medium_range\nwm.t00z.medium_range.land.f162.conus.nc"
-    for i in range(1, 10):
-        with netCDF4.Dataset(in_nc_file, mode='r', format="NETCDF4_CLASSIC") as in_nc:
-            s = datetime.datetime.now()
-            sub_data_1 = in_nc.variables["FSA"][0, grid['minY']:grid['maxY'] + 1, grid['minX']:grid['maxX'] + 1]
-            #sub_data_1 = in_nc.variables["FSA"][0, y_range, x_range]
-            e = datetime.datetime.now()
-            print "data_1: {0}".format(e-s)
-
-            s = datetime.datetime.now()
-            all_data = in_nc.variables["FSA"][0]
-            sub_data_2 = all_data[grid['minY']:grid['maxY'] + 1, grid['minX']:grid['maxX'] + 1]
-            #sub_data_2 = all_data[y_range, x_range]
-            e = datetime.datetime.now()
-            print "data_1: {0}".format(e-s)
-
-            diff = sub_data_2 - sub_data_1
-            print "Max value diff: {0}".format(numpy.amax(diff))
-
-
-
-            # elif len(var_obj.dimensions) == 3:
-            #
-            #     if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
-            #        or var_obj.dimensions[2] != "x":
-            #         raise Exception("unexpected Geo2D variable")
-            #     var_obj[0] = in_nc.variables[name][0,
-            #                                        grid['minY']:grid['maxY'] + 1,
-            #                                        grid['minX']:grid['maxX'] + 1]
-
-
-
+    #
+    #
+    # x_range = range(0, 100, 2)
+    # y_range = range(2000, 2100, 2)
+    #
+    # grid = copy.copy(grid_dict)
+    # in_nc_file = r"G:\nwm_new_data\nwm.20170323\medium_range\nwm.t00z.medium_range.land.f162.conus.nc"
+    # for i in range(1, 10):
+    #     with netCDF4.Dataset(in_nc_file, mode='r', format="NETCDF4_CLASSIC") as in_nc:
+    #         s = datetime.datetime.now()
+    #         sub_data_1 = in_nc.variables["FSA"][0, grid['minY']:grid['maxY'] + 1, grid['minX']:grid['maxX'] + 1]
+    #         #sub_data_1 = in_nc.variables["FSA"][0, y_range, x_range]
+    #         e = datetime.datetime.now()
+    #         print "data_1: {0}".format(e-s)
+    #
+    #         s = datetime.datetime.now()
+    #         all_data = in_nc.variables["FSA"][0]
+    #         sub_data_2 = all_data[grid['minY']:grid['maxY'] + 1, grid['minX']:grid['maxX'] + 1]
+    #         #sub_data_2 = all_data[y_range, x_range]
+    #         e = datetime.datetime.now()
+    #         print "data_1: {0}".format(e-s)
+    #
+    #         diff = sub_data_2 - sub_data_1
+    #         print "Max value diff: {0}".format(numpy.amax(diff))
