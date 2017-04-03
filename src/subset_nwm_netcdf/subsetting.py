@@ -12,7 +12,7 @@ import netCDF4
 
 
 logger = logging.getLogger('subset_nwm_netcdf')
-default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win/sed.exe")
+default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32/sed.exe")
 default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
 def _render_cdl_file(content_list=[], file_path=None):
@@ -75,9 +75,9 @@ def _subset_nwm_netcdf(job_id=None,
                         grid=None,
                         comid_list=None,
                         simulation_date=None,
-                        data_type=None,
-                        model_type=None,
                         file_type=None,
+                        model_cfg=None,
+                        data_type=None,
                         time_stamp_list=None,
                         input_folder_path=None,
                         output_folder_path=None,
@@ -91,9 +91,9 @@ def _subset_nwm_netcdf(job_id=None,
     if job_id is None:
         job_id = "NO_JOB_ID_PROVIDED"
     output_folder_path = os.path.join(output_folder_path, job_id)
-    data_type = data_type.lower()
-    model_type = model_type.lower() if model_type else None
-    file_type = file_type.lower() if file_type else None
+    file_type = file_type.lower()
+    model_cfg = model_cfg.lower() if model_cfg else None
+    data_type = data_type.lower() if data_type else None
     template_version = template_version.lower()
 
     dim_x_len = grid['maxX'] - grid['minX'] + 1
@@ -105,84 +105,84 @@ def _subset_nwm_netcdf(job_id=None,
     index_offset_y = grid["minY"]
 
     var_list = []
-    if data_type == "forcing":
-        if model_type == "analysis_assim":
+    if file_type == "forcing":
+        if model_cfg == "analysis_assim":
             cdl_template_filename = "nwm.tHHz.analysis_assim.forcing.tm00.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
-        elif model_type == "short_range":
+        elif model_cfg == "short_range":
             cdl_template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
             var_list.append(["XXX", range(1, 19)])  # 001, 0002 ... 018
-        elif model_type == "medium_range":
+        elif model_cfg == "medium_range":
             cdl_template_filename = "nwm.tHHz.medium_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
             var_list.append(["XXX", range(1, 241)])  # 001, 002, .... 240
-        elif model_type == "long_range":
+        elif model_cfg == "long_range":
             raise Exception("Long-range forecast has no dedicated forcing files.")
 
-    elif data_type == "forecast":
-        if model_type == "analysis_assim":
+    elif file_type == "forecast":
+        if model_cfg == "analysis_assim":
             var_list.append(["HH", range(24)])  # 00, 01, 02...23
 
-            if file_type == "channel":
+            if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.channel_rt.tm00.conus.cdl_template"
-            elif file_type == "land":
+            elif data_type == "land":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.land.tm00.conus.cdl_template"
-            elif file_type == "reservoir":
+            elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.reservoir.tm00.conus.cdl_template"
-            elif file_type == "terrain":
+            elif data_type == "terrain":
                 raise NotImplementedError()
 
-        elif model_type == "short_range":
+        elif model_cfg == "short_range":
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
             var_list.append(["XXX", range(1, 19)])  # 001, 002 ... 18
 
-            if file_type == "channel":
+            if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
-            elif file_type == "land":
+            elif data_type == "land":
                 cdl_template_filename = "nwm.tHHz.short_range.land.fXXX.conus.cdl_template"
-            elif file_type == "reservoir":
+            elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.short_range.reservoir.fXXX.conus.cdl_template"
-            elif file_type == "terrain":
+            elif data_type == "terrain":
                 raise NotImplementedError()
 
-        elif model_type == "medium_range":
+        elif model_cfg == "medium_range":
             var_list.append(["HH", range(0, 19, 6)])  # 00, 06, ... 18
             var_list.append(["XXX", range(3, 241, 3)])  # 003, 006, 009, ... 240
 
-            if file_type == "channel":
+            if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
-            elif file_type == "land":
+            elif data_type == "land":
                 cdl_template_filename = "nwm.tHHz.medium_range.land.fXXX.conus.cdl_template"
-            elif file_type == "reservoir":
+            elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.medium_range.reservoir.fXXX.conus.cdl_template"
-            elif file_type == "terrain":
+            elif data_type == "terrain":
                 raise NotImplementedError()
 
-        elif "long_range_mem" in model_type:
-            mem_id = int(model_type[-1])
+        elif "long_range_mem" in model_cfg:
+            mem_id = int(model_cfg[-1])
             if mem_id in [1, 2, 3, 4]:
                 var_list.append(["M", [mem_id]])  # 1, 2, 3, 4
                 var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
 
-                if file_type == "channel":
+                if data_type == "channel":
                     var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
-                elif file_type == "land":
+                elif data_type == "land":
                     var_list.append(["XXX", range(24, 721, 24)])  # 024, 048, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
-                elif file_type == "reservoir":
+                elif data_type == "reservoir":
                     var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
-                elif file_type == "terrain":
+                elif data_type == "terrain":
                     raise NotImplementedError("terrain")
             else:
-                raise Exception("Invalid long_rang model type @: {0}".format(model_type))
+                raise Exception("Invalid long_rang model type @: {0}".format(model_cfg))
         else:
-            raise Exception("Invalid long_rang model type @: {0}".format(model_type))
+            raise Exception("Invalid long_rang model type @: {0}".format(model_cfg))
 
     else:
-        raise Exception("invalid data_type: {0}".format(data_type))
+        raise Exception("invalid file_type: {0}".format(file_type))
 
     if use_chunked_template:
         cdl_template_filename += "_chunked"
@@ -190,13 +190,13 @@ def _subset_nwm_netcdf(job_id=None,
     if use_merge_template:
         cdl_template_filename += "_merge"
 
-    if "long_range_mem" in model_type:
+    if "long_range_mem" in model_cfg:
         # long_range uses same templates for all mem1-mem4
         cdl_template_file_path = os.path.join(template_folder_path, template_version,
-                                     data_type, "long_range", cdl_template_filename)
+                                     file_type, "long_range", cdl_template_filename)
     else:
         cdl_template_file_path = os.path.join(template_folder_path, template_version,
-                                     data_type, model_type, cdl_template_filename)
+                                     file_type, model_cfg, cdl_template_filename)
 
     if not os.path.isfile(cdl_template_file_path):
         raise Exception("template file missing @: {0}".format(cdl_template_file_path))
@@ -243,11 +243,11 @@ def _subset_nwm_netcdf(job_id=None,
             if os.path.getsize(write_file_list_path) == 0:
                 f.write("simulation_date={simulation_date}\n".format(simulation_date=simulation_date))
             for nc_filename in nc_filename_list:
-                save_to_folder_path = os.path.join(save_to_path_base, model_type)
-                url = url_base + model_type + "/" + nc_filename
-                if data_type == "forcing":
-                    save_to_folder_path = os.path.join(save_to_path_base, data_type + "_" + model_type)
-                    url = url_base + data_type + "_" + model_type + "/" + nc_filename
+                save_to_folder_path = os.path.join(save_to_path_base, model_cfg)
+                url = url_base + model_cfg + "/" + nc_filename
+                if file_type == "forcing":
+                    save_to_folder_path = os.path.join(save_to_path_base, file_type + "_" + model_cfg)
+                    url = url_base + file_type + "_" + model_cfg + "/" + nc_filename
                 save_to_folder_path = save_to_folder_path.replace("simulation_date", "$simulation_date")
                 wget_cmd = wget_cmd_template.format(save_to_folder_path=save_to_folder_path, url=url)
                 f.write(wget_cmd + "\n")
@@ -255,18 +255,18 @@ def _subset_nwm_netcdf(job_id=None,
         return
 
     simulation_date = "nwm." + simulation_date
-    out_nc_folder_path = os.path.join(output_folder_path, simulation_date, model_type)
-    in_nc_folder_path = os.path.join(input_folder_path, simulation_date, model_type)
-    if data_type == "forcing":
-        out_nc_folder_path = os.path.join(output_folder_path, simulation_date, data_type + "_" + model_type)
-        in_nc_folder_path = os.path.join(input_folder_path, simulation_date, data_type + "_" + model_type)
+    out_nc_folder_path = os.path.join(output_folder_path, simulation_date, model_cfg)
+    in_nc_folder_path = os.path.join(input_folder_path, simulation_date, model_cfg)
+    if file_type == "forcing":
+        out_nc_folder_path = os.path.join(output_folder_path, simulation_date, file_type + "_" + model_cfg)
+        in_nc_folder_path = os.path.join(input_folder_path, simulation_date, file_type + "_" + model_cfg)
 
     if not os.path.exists(out_nc_folder_path):
         os.makedirs(out_nc_folder_path)
 
     comid_list_dict = {"channel": None, "reservoir": None}
     direct_read = None
-    comid_list_dict[file_type] = comid_list
+    comid_list_dict[data_type] = comid_list
     index_list_dict = {"channel": None, "reservoir": None}
     for nc_filename in nc_filename_list:
         out_nc_file = os.path.join(out_nc_folder_path, nc_filename)
@@ -287,14 +287,14 @@ def _subset_nwm_netcdf(job_id=None,
             shutil.copyfile(cdl_template_file_path, cdl_file_path)
 
             content_list = []
-            if data_type == "forecast" and file_type in ["channel", "reservoir"]:
-                if file_type == "channel" and len(comid_list) == 0:
+            if file_type == "forecast" and data_type in ["channel", "reservoir"]:
+                if data_type == "channel" and len(comid_list) == 0:
                     return
-                if file_type == "reservoir" and len(comid_list) == 0:
+                if data_type == "reservoir" and len(comid_list) == 0:
                     return
                 content_list.append(["{%feature_id%}", str(len(comid_list))])
-            elif data_type == "forcing" or \
-                    (data_type == "forecast" and file_type in ["land"]):
+            elif file_type == "forcing" or \
+                    (file_type == "forecast" and data_type in ["land"]):
                 content_list.append(["{%x%}", str(dim_x_len)])
                 content_list.append(["{%y%}", str(dim_y_len)])
 
@@ -307,20 +307,20 @@ def _subset_nwm_netcdf(job_id=None,
 
         shutil.copyfile(nc_template_file_path, out_nc_file)
 
-        if data_type == "forcing" or \
-           data_type == "forecast" and file_type == "land":
+        if file_type == "forcing" or \
+           file_type == "forecast" and data_type == "land":
 
             _subset_grid_file(in_nc_file=in_nc_file,
                               out_nc_file=out_nc_file,
                               grid_dict=grid)
 
-        elif data_type == "forecast" and (file_type == "channel" or file_type == "reservoir"):
+        elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
 
-            comid_list_dict[file_type], index_list_dict[file_type], direct_read = \
+            comid_list_dict[data_type], index_list_dict[data_type], direct_read = \
                 _subset_comid_file(in_nc_file=in_nc_file,
                                    out_nc_file=out_nc_file,
-                                   comid_list=comid_list_dict[file_type],
-                                   index_list=index_list_dict[file_type],
+                                   comid_list=comid_list_dict[data_type],
+                                   index_list=index_list_dict[data_type],
                                    reuse_comid_and_index=True,
                                    direct_read=direct_read)
     if cleanup:
@@ -332,9 +332,9 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                 netcdf_folder_path=None,
                                 output_folder_path=None,
                                 simulation_date_list=None,
-                                data_type_list=None,
-                                model_type_list=None,
                                 file_type_list=None,
+                                model_configuration_list=None,
+                                data_type_list=None,
                                 time_stamp_list=None,
                                 grid_dict=None,
                                 stream_comid_list=None,
@@ -352,11 +352,11 @@ def start_subset_nwm_netcdf_job(job_id=None,
     :param output_folder_path: output result base path
     :param template_folder_path: optional, path to netcdf template folder
     :param simulation_date_list: list of date strings ["20170327", "20170328"]
-    :param data_type_list:  ["forecast", 'forcing']
-    :param model_type_list: ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
+    :param file_type_list:  ["forecast", 'forcing']
+    :param model_configuration_list: ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
                             "long_range": long_range_mem1-4,
                             "long_range_mem4": indicate a specific long_range_mem model
-    :param file_type_list: ['channel', 'reservoir', 'land']
+    :param data_type_list: ['channel', 'reservoir', 'land']
     :param time_stamp_list: [1, 2, ...];  [] or None means all default time stamps
     :param grid_dict: {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
     :param stream_comid_list: [comid1, comid2, ...]
@@ -381,9 +381,10 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info("output_folder_path={0}".format(str(output_folder_path)))
     logger.info("template_folder_path={0}".format(str(template_folder_path)))
     logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
-    logger.info("data_type_list={0}".format(str(data_type_list)))
-    logger.info("model_type_list={0}".format(str(model_type_list)))
     logger.info("file_type_list={0}".format(str(file_type_list)))
+    logger.info("model_configuration_list={0}".format(str(model_configuration_list)))
+    logger.info("data_type_list={0}".format(str(data_type_list)))
+    logger.info("timestamp={0}".format(str(time_stamp_list)))
     logger.info("grid_dict={0}".format(str(grid_dict)))
     logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
     logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
@@ -393,35 +394,35 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info("template_version={0}".format(str(template_version)))
     logger.info("use_chunked_template={0}".format(use_chunked_template))
 
-    if "long_range" in model_type_list:
-        model_type_list.remove("long_range")
+    if "long_range" in model_configuration_list:
+        model_configuration_list.remove("long_range")
         for i in range(1, 5):
-            model_type_list.append("long_range_mem{0}".format(str(i)))
+            model_configuration_list.append("long_range_mem{0}".format(str(i)))
 
     subset_work_dict = {'simulation_date': simulation_date_list,
-                        'date_type': data_type_list,
-                        'model_type': model_type_list,
-                        'file_type':  file_type_list
+                        'file_type': file_type_list,
+                        'model_cfg': model_configuration_list,
+                        'data_type':  data_type_list
                         }
 
     for simulation_date in subset_work_dict["simulation_date"]:
         logger.info("-------------Subsetting {0}--------------------".format(simulation_date))
-        for data_type in subset_work_dict["date_type"]:
-            for model_type in subset_work_dict["model_type"]:
-                data_type_list_copy = subset_work_dict['file_type']
-                if data_type == "forcing":
+        for file_type in subset_work_dict["file_type"]:
+            for model_cfg in subset_work_dict["model_cfg"]:
+                data_type_list_copy = subset_work_dict['data_type']
+                if file_type == "forcing":
                     data_type_list_copy = [None]
-                    if "long_range" in model_type:
+                    if "long_range" in model_cfg:
                         # long_range has no dedicated forcing files
                         continue
-                for file_type in data_type_list_copy:
+                for data_type in data_type_list_copy:
                     try:
                         comid_list = stream_comid_list
-                        if 'reservoir' == file_type:
+                        if 'reservoir' == data_type:
                             comid_list = reservoir_comid_list
-                        log_str = "Working on: {simulation_date}-{data_type}-{model_type}-{file_type}".\
-                            format(simulation_date=simulation_date, data_type=data_type,
-                                   model_type=model_type, file_type=file_type)
+                        log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}".\
+                            format(simulation_date=simulation_date, file_type=file_type,
+                                   model_cfg=model_cfg, data_type=data_type)
                         logger.info(log_str)
                         sim_start_dt = datetime.datetime.now()
                         logger.debug(sim_start_dt)
@@ -430,9 +431,9 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                            grid=grid_dict,
                                            comid_list=comid_list,
                                            simulation_date=simulation_date,
-                                           data_type=data_type,
-                                           model_type=model_type,
                                            file_type=file_type,
+                                           model_cfg=model_cfg,
+                                           data_type=data_type,
                                            time_stamp_list=time_stamp_list,
                                            input_folder_path=netcdf_folder_path,
                                            output_folder_path=output_folder_path,
@@ -656,7 +657,7 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                     "analysis_assim", "short_range", "medium_range",
                     "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
 
-    file_type_list = ["channel", "reservoir", "land"]
+    data_type_list = ["channel", "reservoir", "land"]
 
     for model in folder_list:
         if "forcing_" in model:
@@ -689,20 +690,20 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                            output_base_path=output_base_path,
                            cleanup=cleanup)
         else:
-            for file_type in file_type_list:
+            for data_type in data_type_list:
                 if "analysis_assim" in model:
                     HH_re_list = ["\d\d"]
                     HH_merged_list = ["ALL"]
                     XXX_re_list = ["00"]
                     XXX_merged_list = ["00"]
 
-                    if file_type == "channel":
+                    if data_type == "channel":
                         fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
-                    elif file_type == "land":
+                    elif data_type == "land":
                         fn_template = "nwm.t{HH}z.analysis_assim.land.tm{XXX}.conus.nc"
-                    elif file_type == "reservoir":
+                    elif data_type == "reservoir":
                         fn_template = "nwm.t{HH}z.analysis_assim.reservoir.tm{XXX}.conus.nc"
-                    elif file_type == "terrain":
+                    elif data_type == "terrain":
                         raise NotImplementedError()
                 elif "short_range" in model:
                     HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
@@ -710,13 +711,13 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                     XXX_re_list = ["\d\d\d"]
                     XXX_merged_list = ["ALL"]
 
-                    if file_type == "channel":
+                    if data_type == "channel":
                         fn_template = "nwm.t{HH}z.short_range.channel_rt.f{XXX}.conus.nc"
-                    elif file_type == "land":
+                    elif data_type == "land":
                         fn_template = "nwm.t{HH}z.short_range.land.f{XXX}.conus.nc"
-                    elif file_type == "reservoir":
+                    elif data_type == "reservoir":
                         fn_template = "nwm.t{HH}z.short_range.reservoir.f{XXX}.conus.nc"
-                    elif file_type == "terrain":
+                    elif data_type == "terrain":
                         raise NotImplementedError()
                 elif "medium_range" in model:
                     HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
@@ -724,13 +725,13 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                     XXX_re_list = ["\d\d\d"]
                     XXX_merged_list = ["ALL"]
 
-                    if file_type == "channel":
+                    if data_type == "channel":
                         fn_template = "nwm.t{HH}z.medium_range.channel_rt.f{XXX}.conus.nc"
-                    elif file_type == "land":
+                    elif data_type == "land":
                         fn_template = "nwm.t{HH}z.medium_range.land.f{XXX}.conus.nc"
-                    elif file_type == "reservoir":
+                    elif data_type == "reservoir":
                         fn_template = "nwm.t{HH}z.medium_range.reservoir.f{XXX}.conus.nc"
-                    elif file_type == "terrain":
+                    elif data_type == "terrain":
                         raise NotImplementedError()
                 elif "long_range_mem" in model:
                     mem_id = int(model[-1])
@@ -739,15 +740,15 @@ def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
                     XXX_re_list = ["\d\d\d"]
                     XXX_merged_list = ["ALL"]
 
-                    if file_type == "channel":
+                    if data_type == "channel":
                         fn_template = "nwm.t{HH}z.long_range.channel_rt_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif file_type == "land":
+                    elif data_type == "land":
                         fn_template = "nwm.t{HH}z.long_range.land_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif file_type == "reservoir":
+                    elif data_type == "reservoir":
                         fn_template = "nwm.t{HH}z.long_range.reservoir_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif file_type == "terrain":
+                    elif data_type == "terrain":
                         raise NotImplementedError()
-                log_str = "Merging {model}-{file_type}".format(model=model, file_type=file_type)
+                log_str = "Merging {model}-{data_type}".format(model=model, data_type=data_type)
                 logger.info(log_str)
                 _perform_merge(HH_re_list=HH_re_list,
                                HH_merged_list=HH_merged_list,
