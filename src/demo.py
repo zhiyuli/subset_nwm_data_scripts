@@ -30,9 +30,9 @@ if __name__ == "__main__":
     logger.info(all_start_dt)
     try:
         # Windows
-        db_file_path = "F:/NWM/DB/nwm.sqlite"
+        #db_file_path = "F:/NWM/DB/nwm.sqlite"
         # Linux
-        #db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
 
         # # Shapefile utah
@@ -58,12 +58,12 @@ if __name__ == "__main__":
         # in_epsg = 26912
         # huc_id = None
 
-        # huc 12
-        query_type = "huc_12"
-        shp_path = None
-        geom_str = None
-        in_epsg = None
-        huc_id = "160102040504"
+        # # huc 12
+        # query_type = "huc_12"
+        # shp_path = None
+        # geom_str = None
+        # in_epsg = None
+        # huc_id = "160102040504"
 
         # # huc 10
         # query_type = "huc_10"
@@ -72,12 +72,12 @@ if __name__ == "__main__":
         # in_epsg = None
         # huc_id = "1210030202"
 
-        # # huc 8
-        # query_type = "huc_8"
-        # shp_path = None
-        # geom_str = None
-        # in_epsg = None
-        # huc_id = "16020306"
+        # huc 8
+        query_type = "huc_8"
+        shp_path = None
+        geom_str = None
+        in_epsg = None
+        huc_id = "16020306"
 
         query_result_dict = query_comids_and_grid_indices(job_id=job_id,
                                                           db_file_path=db_file_path,
@@ -90,20 +90,20 @@ if __name__ == "__main__":
             raise Exception("Failed to retrieve spatial query result")
 
         # Windows
-        netcdf_folder_path = "G:\\nwm_new_data"
+        #netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
-        #netcdf_folder_path = "/media/sf_nwm_new_data"
+        netcdf_folder_path = "/media/sf_nwm_new_data"
 
         output_folder_path = "./temp"
         merge_netcdfs = True
         cleanup = True
         simulation_date_list = ["20170327"]
-        #data_type_list = ["forecast", 'forcing']
-        data_type_list = ["forecast"]
-        #model_type_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_type_list = ['analysis_assim']
-        #file_type_list = ['channel', 'reservoir', 'land']
-        file_type_list = ['land']
+        file_type_list = ["forecast", 'forcing']
+        #file_type_list = ["forecast"]
+        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_configuration_list = ['analysis_assim']
+        data_type_list = ['channel', 'reservoir', 'land']
+        #data_type_list = ['land']
         time_stamp_list = []  # ["1, 2, ...];  [] or None means all default time stamps
 
         grid_dict = query_result_dict["grid_land"]
@@ -114,9 +114,9 @@ if __name__ == "__main__":
                                     netcdf_folder_path=netcdf_folder_path,
                                     output_folder_path=output_folder_path,
                                     simulation_date_list=simulation_date_list,
-                                    data_type_list=data_type_list,
-                                    model_type_list=model_type_list,
                                     file_type_list=file_type_list,
+                                    model_configuration_list=model_configuration_list,
+                                    data_type_list=data_type_list,
                                     time_stamp_list=time_stamp_list,
                                     grid_dict=grid_dict,
                                     stream_comid_list=stream_comid_list,
