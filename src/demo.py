@@ -98,13 +98,13 @@ if __name__ == "__main__":
         merge_netcdfs = True
         cleanup = True
         simulation_date_list = ["20170327"]
-        file_type_list = ["forecast", 'forcing']
-        #file_type_list = ["forecast"]
-        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['analysis_assim']
+        #file_type_list = ["forecast", 'forcing']
+        file_type_list = ["forecast"]
+        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_configuration_list = ['long_range']
         data_type_list = ['channel', 'reservoir', 'land']
         #data_type_list = ['land']
-        time_stamp_list = []  # ["1, 2, ...];  [] or None means all default time stamps
+        time_stamp_list = [6]  # ["1, 2, ...];  [] or None means all default time stamps
 
         grid_dict = query_result_dict["grid_land"]
         stream_comid_list = query_result_dict["stream"]["comids"]

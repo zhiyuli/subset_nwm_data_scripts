@@ -44,7 +44,7 @@ def query_comids_and_grid_indices(job_id=None,
 
     logger.info("---------------Performing Spatial Query {0}----------------".format(job_id))
     sq_start_dt = datetime.datetime.now()
-    logger.debug(sq_start_dt)
+    logger.info(sq_start_dt)
 
     logger.info("query_type: {0}".format(str(query_type)))
     logger.info("shp_path: {0}".format(str(shp_path)))

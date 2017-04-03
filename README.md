@@ -3,8 +3,7 @@
 Note that the deployment schedule of new National Water Model (NWM) Ver1.1 got delayed until May 4th 2017 according to its official notice: http://www.nws.noaa.gov/os/notification/scn17-41natl_water_model.htm
 
 NWM's daily output is about 400GB worth of NetCDF files that contain meteorological and hydrologic data/forecasts covers the whole U.S.
-This python library enables users to subset NWM Ver1.1 NetCDF using a polygon, which can significantly reduce
-data size and let researchers quickly access/store regional data they are interested in.
+This python library enables users to subset NWM Ver1.1 NetCDF using a polygon that represents a region of interest, which can significantly reduce data storage size and speed up regional data access.
 
 More about NWM: http://water.noaa.gov/about/nwm
 
@@ -14,7 +13,7 @@ More about NWM: http://water.noaa.gov/about/nwm
 ## Limitations
 1)Currently this library DOES NOT support subsetting the following files:
 
-1-1) "01" and "02" time stamps of analysis_assim model
+1-1) "tm01" and "tm02" of each time stamp in analysis_assim model configuration
 
 1-2) the "terrain" files in all model configurations
 
@@ -25,7 +24,7 @@ user-provided polygon --> Spatial Query module* --> stream comids & reservoir co
 
 *: Spatial Query is optional if user directly provides stream comids & reservoir comids & grid cells
 
-##Environment and Dependencies:
+## Environment and Dependencies:
 Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.
 
 ### Spatial Query module:

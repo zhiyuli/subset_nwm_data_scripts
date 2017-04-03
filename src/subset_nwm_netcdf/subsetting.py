@@ -384,6 +384,7 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info("file_type_list={0}".format(str(file_type_list)))
     logger.info("model_configuration_list={0}".format(str(model_configuration_list)))
     logger.info("data_type_list={0}".format(str(data_type_list)))
+    logger.info("timestamp={0}".format(str(time_stamp_list)))
     logger.info("grid_dict={0}".format(str(grid_dict)))
     logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
     logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
