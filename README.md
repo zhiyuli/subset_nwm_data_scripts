@@ -8,7 +8,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.2", where "1.1" means NWM Ver1.1 and "2" is the version of this library.
+"1.1.3", where "1.1" means NWM Ver1.1 and "3" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cells --> Subset & Merge module --> regional NetCDF files
@@ -20,14 +20,12 @@ See demo.py in source
 
 The copy of the resulting NetCDF files of a huc_12 watershed (comid: 160102040504) for date 20170327 can be found at https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
 
-## Limitations
-1)Currently this library DOES NOT support subsetting the following files:
+## What's new in 1.1.3?
+1) Start to support subsetting the following files:
 
 1-1) "tm01" and "tm02" of each time stamp in analysis_assim model configuration
 
 1-2) the "terrain" files in all model configurations
-
-2) Names of source NWM NetCDF files should be kept unchanged and stored in default folder structure
 
 ## Environment and Dependencies:
 Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.

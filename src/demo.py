@@ -31,9 +31,9 @@ if __name__ == "__main__":
     try:
         # Path to geodatabase file (download from https://www.hydroshare.org/resource/95410260015a4fd1858a3ad3c4aa7f17/)
         # Windows
-        #db_file_path = "F:/NWM/DB/nwm.sqlite"
+        db_file_path = "F:/NWM/DB/nwm.sqlite"
         # Linux
-        db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        #db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
         # # Shapefile example: utah poylgon
         # query_type = "shapefile"
@@ -94,9 +94,9 @@ if __name__ == "__main__":
 
         # Path to the root folder contains original NWM NetCDF files
         # Windows
-        #netcdf_folder_path = "G:\\nwm_new_data"
+        netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
-        netcdf_folder_path = "/media/sf_nwm_new_data"
+        #netcdf_folder_path = "/media/sf_nwm_new_data"
 
         # Path of output folder
         output_folder_path = "./temp"
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         cleanup = True
 
         # list of simulation dates
-        simulation_date_list = ["20170327"]
+        simulation_date_list = ["20170403"]
 
         # list of model file types
         file_type_list = ["forecast", 'forcing']
@@ -114,18 +114,19 @@ if __name__ == "__main__":
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['long_range_mem2']
+        #model_configuration_list = ['analysis_assim']
 
         # list of model result data types
-        data_type_list = ['channel', 'reservoir', 'land']
-        #data_type_list = ['land']
+        data_type_list = ['channel', 'reservoir', 'land', 'terrain']
+        #data_type_list = ['terrain']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
         time_stamp_list = []
 
-
-        grid_dict = query_result_dict["grid_land"]
+        grid_land_dict = query_result_dict["grid_land"]
+        #grid_terrain_dict = query_result_dict["grid_terrain"]
+        grid_terrain_dict = query_result_dict["grid_land"]
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
         start_subset_nwm_netcdf_job(job_id=job_id,
@@ -136,7 +137,8 @@ if __name__ == "__main__":
                                     model_configuration_list=model_configuration_list,
                                     data_type_list=data_type_list,
                                     time_stamp_list=time_stamp_list,
-                                    grid_dict=grid_dict,
+                                    grid_land_dict=grid_land_dict,
+                                    grid_terrain_dict=grid_terrain_dict,
                                     stream_comid_list=stream_comid_list,
                                     reservoir_comid_list=reservoir_comid_list,
                                     merge_netcdfs=merge_netcdfs,

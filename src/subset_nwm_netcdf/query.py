@@ -57,7 +57,8 @@ def query_comids_and_grid_indices(job_id=None,
         in_epsg_checked = None
         query_type_lower = query_type.lower()
         query_stream = True
-        query_grid = True
+        query_land_grid = True
+        query_terrain_grid = False
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
@@ -86,14 +87,23 @@ def query_comids_and_grid_indices(job_id=None,
                                       query_window_wkt=polygon_query_window.wkt,
                                       input_epsg=in_epsg_checked,
                                       query_stream=query_stream,
-                                      query_grid=query_grid,
+                                      query_land_grid=query_land_grid,
+                                      query_terrain_grid=query_terrain_grid,
                                       query_reservoir=query_reservoir)
 
-        logger.info("grid: {0}".format(str(data["grid_land"])))
-        dim_x_len = data["grid_land"]['maxX'] - data["grid_land"]['minX'] + 1
-        dim_y_len = data["grid_land"]['maxY'] - data["grid_land"]['minY'] + 1
-        logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
-                                                         cells=str(dim_x_len * dim_y_len)))
+        if "grid_land" in data:
+            logger.info("grid_land: {0}".format(str(data["grid_land"])))
+            dim_x_len = data["grid_land"]['maxX'] - data["grid_land"]['minX'] + 1
+            dim_y_len = data["grid_land"]['maxY'] - data["grid_land"]['minY'] + 1
+            logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
+                                                             cells=str(dim_x_len * dim_y_len)))
+        if "grid_terrain" in data:
+            logger.info("grid_terrain: {0}".format(str(data["grid_terrain"])))
+            dim_x_len = data["grid_terrain"]['maxX'] - data["grid_terrain"]['minX'] + 1
+            dim_y_len = data["grid_terrain"]['maxY'] - data["grid_terrain"]['minY'] + 1
+            logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
+                                                             cells=str(dim_x_len * dim_y_len)))
+
         logger.info("stream count: {0}".format(str(data["stream"]["count"])))
         logger.info("reservoir count: {0}".format(str(data["reservoir"]["count"])))
 
@@ -187,12 +197,13 @@ def _check_supported_epsg(epsg=None, db_file=None):
 
 
 def _perform_spatial_query(db_file=None,
-                          db_epsg=None,
-                          query_window_wkt=None,
-                          input_epsg=None,
-                          query_stream=True,
-                          query_grid=True,
-                          query_reservoir=True):
+                           db_epsg=None,
+                           query_window_wkt=None,
+                           input_epsg=None,
+                           query_stream=True,
+                           query_land_grid=True,
+                           query_terrain_grid=False,
+                           query_reservoir=True):
 
     conn = None
     data = {"status": "success"}
@@ -217,7 +228,7 @@ def _perform_spatial_query(db_file=None,
         conn.execute("SELECT load_extension('mod_spatialite')")
         geometry_field_name = 'Shape'
 
-        if query_grid:
+        if query_land_grid:
             query_table_name = 'grid_land'
             query_string = 'min(grid_land.west_east) AS minX, '\
                            'max(grid_land.west_east) AS maxX, '\
@@ -233,6 +244,24 @@ def _perform_spatial_query(db_file=None,
             grid_indices = list(cursor.fetchone())
             data['grid_land'] = {"minX": grid_indices[0], "maxX": grid_indices[1],
                                  "minY": grid_indices[2], "maxY": grid_indices[3]}
+
+        if query_terrain_grid:
+            query_table_name = 'grid_terrain'
+            query_string = 'min(grid_terrain.west_east) AS minX, '\
+                           'max(grid_terrain.west_east) AS maxX, '\
+                           'min(grid_terrain.south_north) AS minY, '\
+                           'max(grid_terrain.south_north) AS maxY'
+
+            sql_grid_terrain = sql_template.format(query_table_name=query_table_name,
+                                                   query_string=query_string,
+                                                   geometry_field_name=geometry_field_name,
+                                                   input_geom=input_geom)
+
+            cursor = conn.execute(sql_grid_terrain)
+            grid_indices = list(cursor.fetchone())
+            data['grid_terrain'] = {"minX": grid_indices[0], "maxX": grid_indices[1],
+                                    "minY": grid_indices[2], "maxY": grid_indices[3]}
+
         if query_stream:
             query_table_name = 'stream'
             query_string = 'station_id'
