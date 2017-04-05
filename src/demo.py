@@ -106,7 +106,7 @@ if __name__ == "__main__":
         cleanup = True
 
         # list of simulation dates
-        simulation_date_list = ["20170403"]
+        simulation_date_list = ["20170327"]
 
         # list of model file types
         file_type_list = ["forecast", 'forcing']
@@ -114,24 +114,27 @@ if __name__ == "__main__":
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['analysis_assim']
+        #model_configuration_list = ['long_range_mem3']
 
         # list of model result data types
+        #data_type_list = ['channel', 'reservoir', 'land', 'terrain']
         data_type_list = ['channel', 'reservoir', 'land', 'terrain']
-        #data_type_list = ['terrain']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
         time_stamp_list = []
 
         grid_land_dict = query_result_dict["grid_land"]
+
+        # change this line back once terrain gdb is ready
         #grid_terrain_dict = query_result_dict["grid_terrain"]
         grid_terrain_dict = query_result_dict["grid_land"]
+
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
         start_subset_nwm_netcdf_job(job_id=job_id,
-                                    netcdf_folder_path=netcdf_folder_path,
-                                    output_folder_path=output_folder_path,
+                                    input_netcdf_folder_path=netcdf_folder_path,
+                                    output_netcdf_folder_path=output_folder_path,
                                     simulation_date_list=simulation_date_list,
                                     file_type_list=file_type_list,
                                     model_configuration_list=model_configuration_list,

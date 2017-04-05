@@ -8,7 +8,7 @@ import fiona
 import shapely.wkt
 import shapely.geometry
 # import pyspatialite.dbapi2 as db
-import pysqlite2.dbapi2 as db
+import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
 
 
 logger = logging.getLogger('subset_nwm_netcdf')
@@ -29,7 +29,7 @@ def query_comids_and_grid_indices(job_id=None,
     :param db_file_path: full path to NWM spatialite geodatabase file
     :param db_epsg_code: the epsg code of NWM spatialite geodatabase (default 4269)
     :param job_id: a job identifier
-    :param query_type: "shapefile", "wkt", "geojson", "huc_12", "huc_10", "huc_8", "stream"
+    :param query_type: "shapefile", "wkt", "geojson", "huc_12", "huc_10", "huc_8", ("stream": not supported yet)
     :param shp_path: full path to *.shp file
     :param geom_str: wkt or geojson string
     :param in_epsg: epsg code of geom_str or shapefile
@@ -62,8 +62,11 @@ def query_comids_and_grid_indices(job_id=None,
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
-            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path, query_type_lower=query_type_lower,
-                                                                in_epsg=in_epsg, shp_path=shp_path, geom_str=geom_str)
+            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path,
+                                                                query_type_lower=query_type_lower,
+                                                                in_epsg=in_epsg,
+                                                                shp_path=shp_path,
+                                                                geom_str=geom_str)
         elif "huc" in query_type_lower:
 
             shape_obj, in_epsg_checked = _get_huc_bbox_shapely_shape_obj(db_file=db_file_path,

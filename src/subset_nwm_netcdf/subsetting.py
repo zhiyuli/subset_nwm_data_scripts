@@ -15,6 +15,7 @@ logger = logging.getLogger('subset_nwm_netcdf')
 default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32/sed.exe")
 default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
+
 def _render_cdl_file(content_list=[], file_path=None):
     for item in content_list:
         _replace_text_in_file(search_text=item[0], replace_text=item[1], file_path=file_path)
@@ -72,22 +73,19 @@ def _create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True):
 
 
 def _subset_nwm_netcdf(job_id=None,
-                        grid_land_dict=None,
-                        grid_terrain_dict=None,
-                        comid_list=None,
-                        simulation_date=None,
-                        file_type=None,
-                        model_cfg=None,
-                        data_type=None,
-                        time_stamp_list=None,
-                        input_folder_path=None,
-                        output_folder_path=None,
-                        template_folder_path=None,
-                        template_version="v1.1",
-                        write_file_list=None,
-                        use_merge_template=False,
-                        cleanup=False,
-                        use_chunked_template=True):
+                       grid_dict=None,
+                       comid_list=None,
+                       simulation_date=None,
+                       file_type=None,
+                       model_cfg=None,
+                       data_type=None,
+                       time_stamp_list=None,
+                       input_folder_path=None,
+                       output_folder_path=None,
+                       template_folder_path=None,
+                       template_version="v1.1",
+                       write_file_list=None,
+                       cleanup=True):
 
     if job_id is None:
         job_id = "NO_JOB_ID_PROVIDED"
@@ -97,12 +95,8 @@ def _subset_nwm_netcdf(job_id=None,
     data_type = data_type.lower() if data_type else None
     template_version = template_version.lower()
 
-    dim_land_x_len = grid_land_dict['maxX'] - grid_land_dict['minX'] + 1
-    dim_land_y_len = grid_land_dict['maxY'] - grid_land_dict['minY'] + 1
-
-    dim_terrain_x_len = grid_terrain_dict['maxX'] - grid_terrain_dict['minX'] + 1
-    dim_terrain_y_len = grid_terrain_dict['maxY'] - grid_terrain_dict['minY'] + 1
-
+    grid_dim_x_len = grid_dict['maxX'] - grid_dict['minX'] + 1
+    grid_dim_y_len = grid_dict['maxY'] - grid_dict['minY'] + 1
 
     var_list = []
     if file_type == "forcing":
@@ -188,11 +182,7 @@ def _subset_nwm_netcdf(job_id=None,
     else:
         raise Exception("invalid file_type: {0}".format(file_type))
 
-    if use_chunked_template:
-        cdl_template_filename += "_chunked"
-
-    if use_merge_template:
-        cdl_template_filename += "_merge"
+    cdl_template_filename += "_chunked_merge"
 
     if "long_range_mem" in model_cfg:
         # long_range uses same templates for all mem1-mem4
@@ -298,12 +288,9 @@ def _subset_nwm_netcdf(job_id=None,
                     return
                 content_list.append(["{%feature_id%}", str(len(comid_list))])
             elif file_type == "forcing" or \
-                    (file_type == "forecast" and data_type in ["land"]):
-                content_list.append(["{%x%}", str(dim_land_x_len)])
-                content_list.append(["{%y%}", str(dim_land_y_len)])
-            elif file_type == "forecast" and data_type in ["terrain"]:
-                content_list.append(["{%x%}", str(dim_terrain_x_len)])
-                content_list.append(["{%y%}", str(dim_terrain_y_len)])
+                    (file_type == "forecast" and data_type in ["land", "terrain"]):
+                content_list.append(["{%x%}", str(grid_dim_x_len)])
+                content_list.append(["{%y%}", str(grid_dim_y_len)])
 
             content_list.append(["{%filename%}", nc_template_file_name])
             content_list.append(["{%model_initialization_time%}", "2030-01-01_00:00:00"])
@@ -315,11 +302,10 @@ def _subset_nwm_netcdf(job_id=None,
         shutil.copyfile(nc_template_file_path, out_nc_file)
 
         if file_type == "forcing" or \
-           file_type == "forecast" and (data_type == "land" or data_type == "terrain"):
-            grid = grid_land_dict if data_type == "land" else grid_terrain_dict
+           file_type == "forecast" and (data_type in ["land", "terrain"]):
             _subset_grid_file(in_nc_file=in_nc_file,
                               out_nc_file=out_nc_file,
-                              grid_dict=grid)
+                              grid_dict=grid_dict)
 
         elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
 
@@ -332,12 +318,14 @@ def _subset_nwm_netcdf(job_id=None,
                                    direct_read=direct_read)
     if cleanup:
         # remove nc_template folder
-        shutil.rmtree(out_nc_folder_template_path)
+        if os.path.exists(out_nc_folder_template_path):
+            shutil.rmtree(out_nc_folder_template_path)
+            logger.debug("Folder removed: {0}".format(out_nc_folder_template_path))
 
 
 def start_subset_nwm_netcdf_job(job_id=None,
-                                netcdf_folder_path=None,
-                                output_folder_path=None,
+                                input_netcdf_folder_path=None,
+                                output_netcdf_folder_path=None,
                                 simulation_date_list=None,
                                 file_type_list=None,
                                 model_configuration_list=None,
@@ -349,44 +337,41 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                 reservoir_comid_list=None,
                                 merge_netcdfs=True,
                                 cleanup=True,
-                                template_folder_path=None,
-                                write_file_list=None,
                                 template_version="v1.1",
-                                use_chunked_template=True):
+                                write_file_list=None):
     """
 
-    :param job_id: used as result folder name
-    :param netcdf_folder_path: original NWM netcdf folder
-    :param output_folder_path: output result base path
-    :param template_folder_path: optional, path to netcdf template folder
-    :param simulation_date_list: list of date strings ["20170327", "20170328"]
-    :param file_type_list:  ["forecast", 'forcing']
-    :param model_configuration_list: ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
+    :param job_id: required, used as result folder name
+    :param input_netcdf_folder_path: required, original NWM netcdf base folder path
+    :param output_netcdf_folder_path: required, output results base folder path
+    :param simulation_date_list: required, list of date strings ["20170327", "20170328"]
+    :param file_type_list:  required, ["forecast", 'forcing']
+    :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
                             "long_range": long_range_mem1-4,
                             "long_range_mem4": indicate a specific long_range_mem model
-    :param data_type_list: ['channel', 'reservoir', 'land']
-    :param time_stamp_list: [1, 2, ...];  [] or None means all default time stamps
-    :param grid_dict: {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
-    :param stream_comid_list: [comid1, comid2, ...]
-    :param reservoir_comid_list: [comid1, comid2, ....]
+    :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
+    :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
+    :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param stream_comid_list: required, [comid1, comid2, ...]
+    :param reservoir_comid_list: required, [comid1, comid2, ....]
     :param merge_netcdfs: True: merge netcdf after subsetting
     :param cleanup: remove intermediate files and only keep merged netcdfs
     :param write_file_list: internal testing purpose, ignore this parameter
     :param template_version: "v1.1"
-    :param use_chunked_template: True: default
     :return: no value returned
     """
 
     logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
-    if template_folder_path is None:
-        template_folder_path = default_nc_templates_path
+
+    template_folder_path = default_nc_templates_path
     logger.info("---------------Subsetting {0}----------------".format(job_id))
     start_dt = datetime.datetime.now()
     logger.info(start_dt)
 
     logger.info("job_id={0}".format(str(job_id)))
-    logger.info("netcdf_folder_path={0}".format(str(netcdf_folder_path)))
-    logger.info("output_folder_path={0}".format(str(output_folder_path)))
+    logger.info("input_netcdf_folder_path={0}".format(str(input_netcdf_folder_path)))
+    logger.info("output_netcdf_folder_path={0}".format(str(output_netcdf_folder_path)))
     logger.info("template_folder_path={0}".format(str(template_folder_path)))
     logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
     logger.info("file_type_list={0}".format(str(file_type_list)))
@@ -401,7 +386,6 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info("cleanup={0}".format(str(cleanup)))
     logger.info("write_file_list={0}".format(str(write_file_list)))
     logger.info("template_version={0}".format(str(template_version)))
-    logger.info("use_chunked_template={0}".format(use_chunked_template))
 
     if "long_range" in model_configuration_list:
         model_configuration_list.remove("long_range")
@@ -432,6 +416,11 @@ def start_subset_nwm_netcdf_job(job_id=None,
                         comid_list = stream_comid_list
                         if 'reservoir' == data_type:
                             comid_list = reservoir_comid_list
+
+                        grid_dict = grid_land_dict
+                        if 'terrain' == data_type:
+                            grid_dict = grid_terrain_dict
+
                         log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}".\
                             format(simulation_date=simulation_date, file_type=file_type,
                                    model_cfg=model_cfg, data_type=data_type)
@@ -440,28 +429,25 @@ def start_subset_nwm_netcdf_job(job_id=None,
                         logger.debug(sim_start_dt)
 
                         _subset_nwm_netcdf(job_id=job_id,
-                                           grid_land_dict=grid_land_dict,
-                                           grid_terrain_dict=grid_terrain_dict,
+                                           grid_dict=grid_dict,
                                            comid_list=comid_list,
                                            simulation_date=simulation_date,
                                            file_type=file_type,
                                            model_cfg=model_cfg,
                                            data_type=data_type,
                                            time_stamp_list=time_stamp_list,
-                                           input_folder_path=netcdf_folder_path,
-                                           output_folder_path=output_folder_path,
+                                           input_folder_path=input_netcdf_folder_path,
+                                           output_folder_path=output_netcdf_folder_path,
                                            template_folder_path=template_folder_path,
                                            template_version=template_version,
                                            write_file_list=write_file_list,
-                                           use_merge_template=merge_netcdfs,
-                                           cleanup=cleanup,
-                                           use_chunked_template=use_chunked_template)
+                                           cleanup=cleanup)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
                         sim_elapsed = sim_end_dt - sim_start_dt
                         logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
-                        logger.error(str(type(ex)) + ex.message)
+                        logger.exception(str(type(ex)) + ex.message)
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)
@@ -469,22 +455,24 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info(elapse_dt)
     logger.info("---------------------Subsetting Done-----------------------------")
 
-    if merge_netcdfs:
-        logger.info("---------------------Start Merging-----------------------------")
-        merge_start_dt = datetime.datetime.now()
-        logger.debug(merge_start_dt)
-        for simulation_date in subset_work_dict["simulation_date"]:
-            logger.info("----------------------Merging {0}".format(simulation_date))
-            merge_nwm_netcdf(input_base_path=os.path.join(output_folder_path,
-                                                          job_id,
-                                                          "nwm.{0}".format(simulation_date)),
-                             cleanup=cleanup)
-        merge_end_dt = datetime.datetime.now()
-        logger.debug(merge_end_dt)
-        merge_elapse_dt = merge_end_dt - merge_start_dt
-        logger.info(merge_elapse_dt)
-        logger.info("---------------------Merge Done-----------------------------")
-    pass
+    try:
+        if merge_netcdfs:
+            logger.info("---------------------Start Merging-----------------------------")
+            merge_start_dt = datetime.datetime.now()
+            logger.debug(merge_start_dt)
+            for simulation_date in subset_work_dict["simulation_date"]:
+                logger.info("----------------------Merging {0}".format(simulation_date))
+                merge_nwm_netcdf(input_base_path=os.path.join(output_netcdf_folder_path,
+                                                              job_id,
+                                                              "nwm.{0}".format(simulation_date)),
+                                 cleanup=cleanup)
+            merge_end_dt = datetime.datetime.now()
+            logger.debug(merge_end_dt)
+            merge_elapse_dt = merge_end_dt - merge_start_dt
+            logger.info(merge_elapse_dt)
+            logger.info("---------------------Merge Done-----------------------------")
+    except Exception as ex:
+        logger.exception(str(type(ex)) + ex.message)
 
 
 def _subset_grid_file(in_nc_file=None,
@@ -833,6 +821,7 @@ def _perform_merge(HH_re_list=None,
                     if cleanup:
                         for f in rm_list:
                             os.remove(f)
+                        logger.debug("Files removed: {0}".fromat(str(rm_list)))
 
                 except Exception as ex:
                     logger.error(ex.message)
