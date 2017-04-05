@@ -87,9 +87,6 @@ def _subset_nwm_netcdf(job_id=None,
                        write_file_list=None,
                        cleanup=True):
 
-    if job_id is None:
-        job_id = "NO_JOB_ID_PROVIDED"
-    output_folder_path = os.path.join(output_folder_path, job_id)
     file_type = file_type.lower()
     model_cfg = model_cfg.lower() if model_cfg else None
     data_type = data_type.lower() if data_type else None
@@ -282,10 +279,6 @@ def _subset_nwm_netcdf(job_id=None,
 
             content_list = []
             if file_type == "forecast" and data_type in ["channel", "reservoir"]:
-                if data_type == "channel" and len(comid_list) == 0:
-                    return
-                if data_type == "reservoir" and len(comid_list) == 0:
-                    return
                 content_list.append(["{%feature_id%}", str(len(comid_list))])
             elif file_type == "forcing" or \
                     (file_type == "forecast" and data_type in ["land", "terrain"]):
@@ -365,6 +358,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
 
     template_folder_path = default_nc_templates_path
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
     logger.info("---------------Subsetting {0}----------------".format(job_id))
     start_dt = datetime.datetime.now()
     logger.info(start_dt)
@@ -387,11 +382,6 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.info("write_file_list={0}".format(str(write_file_list)))
     logger.info("template_version={0}".format(str(template_version)))
 
-    if "long_range" in model_configuration_list:
-        model_configuration_list.remove("long_range")
-        for i in range(1, 5):
-            model_configuration_list.append("long_range_mem{0}".format(str(i)))
-
     subset_work_dict = {'simulation_date': simulation_date_list,
                         'file_type': file_type_list,
                         'model_cfg': model_configuration_list,
@@ -410,13 +400,20 @@ def start_subset_nwm_netcdf_job(job_id=None,
                         continue
                 for data_type in data_type_list_copy:
                     try:
-                        if "long_range" in model_cfg and data_type == "terrain":
-                            # long_range has no terrain outputs
+                        if (data_type == "channel" and len(stream_comid_list) == 0) or \
+                                (data_type == "reservoir" and len(reservoir_comid_list) == 0):
                             continue
                         comid_list = stream_comid_list
                         if 'reservoir' == data_type:
                             comid_list = reservoir_comid_list
 
+                        if "long_range" in model_cfg and data_type == "terrain":
+                            # long_range has no terrain outputs
+                            continue
+
+                        if ('land' == data_type and grid_land_dict is None) or \
+                                ('terrain' == data_type and grid_terrain_dict is None):
+                            continue
                         grid_dict = grid_land_dict
                         if 'terrain' == data_type:
                             grid_dict = grid_terrain_dict
@@ -453,26 +450,41 @@ def start_subset_nwm_netcdf_job(job_id=None,
     logger.debug(end_dt)
     elapse_dt = end_dt - start_dt
     logger.info(elapse_dt)
-    logger.info("---------------------Subsetting Done-----------------------------")
+    logger.info("---------------------Subsetting Done {job_id}-----------------------------".format(job_id=job_id))
 
+
+def start_merge_nwm_netcdf_job(job_id=None,
+                               simulation_date_list=None,
+                               file_type_list=None,
+                               model_cfg_list=None,
+                               data_type_list=None,
+                               time_stamp_list=None,
+                               netcdf_folder_path=None,
+                               cleanup=True):
     try:
-        if merge_netcdfs:
-            logger.info("---------------------Start Merging-----------------------------")
-            merge_start_dt = datetime.datetime.now()
-            logger.debug(merge_start_dt)
-            for simulation_date in subset_work_dict["simulation_date"]:
-                logger.info("----------------------Merging {0}".format(simulation_date))
-                merge_nwm_netcdf(input_base_path=os.path.join(output_netcdf_folder_path,
-                                                              job_id,
-                                                              "nwm.{0}".format(simulation_date)),
-                                 cleanup=cleanup)
-            merge_end_dt = datetime.datetime.now()
-            logger.debug(merge_end_dt)
-            merge_elapse_dt = merge_end_dt - merge_start_dt
-            logger.info(merge_elapse_dt)
-            logger.info("---------------------Merge Done-----------------------------")
+        if job_id is None:
+            job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
+        logger.info("---------------------Start Merging {job_id}-----------------------------".format(job_id=job_id))
+        merge_start_dt = datetime.datetime.now()
+        logger.debug(merge_start_dt)
+
+        _merge_nwm_netcdf(simulation_date_list=simulation_date_list,
+                          file_type_list=file_type_list,
+                          model_cfg_list=model_cfg_list,
+                          data_type_list=data_type_list,
+                          time_stamp_list=time_stamp_list,
+                          input_base_path=netcdf_folder_path,
+                          output_base_path=netcdf_folder_path,
+                          cleanup=cleanup)
+
+        merge_end_dt = datetime.datetime.now()
+        logger.debug(merge_end_dt)
+        merge_elapse_dt = merge_end_dt - merge_start_dt
+        logger.info(merge_elapse_dt)
+        logger.info("---------------------Merge Done {job_id}-----------------------------".format(job_id=job_id))
     except Exception as ex:
         logger.exception(str(type(ex)) + ex.message)
+    pass
 
 
 def _subset_grid_file(in_nc_file=None,
@@ -650,116 +662,134 @@ def _subset_comid_file(in_nc_file=None,
             return comid_list, None, direct_read
 
 
-def merge_nwm_netcdf(input_base_path=None, output_base_path=None, cleanup=True):
+def _merge_nwm_netcdf(simulation_date_list=None,
+                     file_type_list=None,
+                     model_cfg_list=None,
+                     data_type_list=None,
+                     time_stamp_list=None,
+                     input_base_path=None,
+                     output_base_path=None,
+                     cleanup=True):
 
     if output_base_path is None:
         output_base_path = input_base_path
-    folder_list = ["forcing_analysis_assim", "forcing_short_range", "forcing_medium_range",
-                    "analysis_assim", "short_range", "medium_range",
-                    "long_range_mem1",  "long_range_mem2",  "long_range_mem3",  "long_range_mem4"]
 
-    data_type_list = ["channel", "reservoir", "land", "terrain"]
+    for simulation_date in simulation_date_list:
+        simulation_folder_name = "nwm.{simulation_date}".format(simulation_date=simulation_date)
+        logger.info("Merging {0}".format(simulation_folder_name))
+        input_folder_path = os.path.join(input_base_path, simulation_folder_name)
+        output_folder_path = os.path.join(output_base_path, simulation_folder_name)
+        for file_type in file_type_list:
+            for model_cfg in model_cfg_list:
+                if file_type == "forcing":
+                    model_configuration_folder_name = file_type + "_" + model_cfg
+                    input_folder_path = os.path.join(input_folder_path, model_configuration_folder_name)
+                    output_folder_path = os.path.join(output_folder_path, model_configuration_folder_name)
+                    if "analysis_assim" == model_cfg:
+                        fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
+                        HH_re_list = ["\d\d"]
+                        HH_merged_list = ["ALL"]
+                        XXX_re_list = ["00", "01", "02"]
+                        XXX_merged_list = ["00", "01", "02"]
+                    elif "short_range" == model_cfg:
+                        fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
+                        HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
+                        HH_merged_list = HH_re_list
+                        XXX_re_list = ["\d\d\d"]
+                        XXX_merged_list = ["ALL"]
+                    elif "medium_range" == model_cfg:
+                        fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
+                        HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                        HH_merged_list = HH_re_list
+                        XXX_re_list = ["\d\d\d"]
+                        XXX_merged_list = ["ALL"]
+                    log_str = "Merging {file_type}-{model_cfg}-{data_type}".format(file_type=file_type,
+                                                                                   model_cfg=model_cfg,
+                                                                                   data_type=data_type)
+                    logger.info(log_str)
+                    _perform_merge(HH_re_list=HH_re_list,
+                                   HH_merged_list=HH_merged_list,
+                                   XXX_re_list=XXX_re_list,
+                                   XXX_merged_list=XXX_merged_list,
+                                   input_folder_path=input_base_path,
+                                   fn_template=fn_template,
+                                   output_folder_path=output_base_path,
+                                   cleanup=cleanup)
 
-    for model in folder_list:
-        if "forcing_" in model:
-            if "analysis_assim" in model:
-                fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
-                HH_re_list = ["\d\d"]
-                HH_merged_list = ["ALL"]
-                XXX_re_list = ["00", "01", "02"]
-                XXX_merged_list = ["00", "01", "02"]
-            elif "short_range" in model:
-                fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
-                HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
-                HH_merged_list = HH_re_list
-                XXX_re_list = ["\d\d\d"]
-                XXX_merged_list = ["ALL"]
-            elif "medium_range" in model:
-                fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
-                HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                HH_merged_list = HH_re_list
-                XXX_re_list = ["\d\d\d"]
-                XXX_merged_list = ["ALL"]
+                else:  # forecast
+                    model_configuration_folder_name = model_cfg
+                    input_folder_path = os.path.join(input_folder_path, model_configuration_folder_name)
+                    output_folder_path = os.path.join(output_folder_path, model_configuration_folder_name)
+                    for data_type in data_type_list:
+                        if "analysis_assim" == model_cfg:
+                            HH_re_list = ["\d\d"]
+                            HH_merged_list = ["ALL"]
+                            XXX_re_list = ["00", "01", "02"]
+                            XXX_merged_list = ["00", "01", "02"]
 
-            _perform_merge(HH_re_list=HH_re_list,
-                           HH_merged_list=HH_merged_list,
-                           XXX_re_list=XXX_re_list,
-                           XXX_merged_list=XXX_merged_list,
-                           input_base_path=input_base_path,
-                           model=model,
-                           fn_template=fn_template,
-                           output_base_path=output_base_path,
-                           cleanup=cleanup)
-        else:
-            for data_type in data_type_list:
-                if "analysis_assim" in model:
-                    HH_re_list = ["\d\d"]
-                    HH_merged_list = ["ALL"]
-                    XXX_re_list = ["00", "01", "02"]
-                    XXX_merged_list = ["00", "01", "02"]
+                            if data_type == "channel":
+                                fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
+                            elif data_type == "land":
+                                fn_template = "nwm.t{HH}z.analysis_assim.land.tm{XXX}.conus.nc"
+                            elif data_type == "reservoir":
+                                fn_template = "nwm.t{HH}z.analysis_assim.reservoir.tm{XXX}.conus.nc"
+                            elif data_type == "terrain":
+                                fn_template = "nwm.t{HH}z.analysis_assim.terrain_rt.tm{XXX}.conus.nc"
+                        elif "short_range" == model_cfg:
+                            HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
+                            HH_merged_list = HH_re_list
+                            XXX_re_list = ["\d\d\d"]
+                            XXX_merged_list = ["ALL"]
 
-                    if data_type == "channel":
-                        fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
-                    elif data_type == "land":
-                        fn_template = "nwm.t{HH}z.analysis_assim.land.tm{XXX}.conus.nc"
-                    elif data_type == "reservoir":
-                        fn_template = "nwm.t{HH}z.analysis_assim.reservoir.tm{XXX}.conus.nc"
-                    elif data_type == "terrain":
-                        fn_template = "nwm.t{HH}z.analysis_assim.terrain_rt.tm{XXX}.conus.nc"
-                elif "short_range" in model:
-                    HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
-                    HH_merged_list = HH_re_list
-                    XXX_re_list = ["\d\d\d"]
-                    XXX_merged_list = ["ALL"]
+                            if data_type == "channel":
+                                fn_template = "nwm.t{HH}z.short_range.channel_rt.f{XXX}.conus.nc"
+                            elif data_type == "land":
+                                fn_template = "nwm.t{HH}z.short_range.land.f{XXX}.conus.nc"
+                            elif data_type == "reservoir":
+                                fn_template = "nwm.t{HH}z.short_range.reservoir.f{XXX}.conus.nc"
+                            elif data_type == "terrain":
+                                fn_template = "nwm.t{HH}z.short_range.terrain_rt.f{XXX}.conus.nc"
+                        elif "medium_range" == model_cfg:
+                            HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                            HH_merged_list = HH_re_list
+                            XXX_re_list = ["\d\d\d"]
+                            XXX_merged_list = ["ALL"]
 
-                    if data_type == "channel":
-                        fn_template = "nwm.t{HH}z.short_range.channel_rt.f{XXX}.conus.nc"
-                    elif data_type == "land":
-                        fn_template = "nwm.t{HH}z.short_range.land.f{XXX}.conus.nc"
-                    elif data_type == "reservoir":
-                        fn_template = "nwm.t{HH}z.short_range.reservoir.f{XXX}.conus.nc"
-                    elif data_type == "terrain":
-                        fn_template = "nwm.t{HH}z.short_range.terrain_rt.f{XXX}.conus.nc"
-                elif "medium_range" in model:
-                    HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                    HH_merged_list = HH_re_list
-                    XXX_re_list = ["\d\d\d"]
-                    XXX_merged_list = ["ALL"]
+                            if data_type == "channel":
+                                fn_template = "nwm.t{HH}z.medium_range.channel_rt.f{XXX}.conus.nc"
+                            elif data_type == "land":
+                                fn_template = "nwm.t{HH}z.medium_range.land.f{XXX}.conus.nc"
+                            elif data_type == "reservoir":
+                                fn_template = "nwm.t{HH}z.medium_range.reservoir.f{XXX}.conus.nc"
+                            elif data_type == "terrain":
+                                fn_template = "nwm.t{HH}z.medium_range.terrain_rt.f{XXX}.conus.nc"
+                        elif "long_range_mem" in model_cfg:
+                            mem_id = int(model_cfg[-1])
+                            HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
+                            HH_merged_list = HH_re_list
+                            XXX_re_list = ["\d\d\d"]
+                            XXX_merged_list = ["ALL"]
 
-                    if data_type == "channel":
-                        fn_template = "nwm.t{HH}z.medium_range.channel_rt.f{XXX}.conus.nc"
-                    elif data_type == "land":
-                        fn_template = "nwm.t{HH}z.medium_range.land.f{XXX}.conus.nc"
-                    elif data_type == "reservoir":
-                        fn_template = "nwm.t{HH}z.medium_range.reservoir.f{XXX}.conus.nc"
-                    elif data_type == "terrain":
-                        fn_template = "nwm.t{HH}z.medium_range.terrain_rt.f{XXX}.conus.nc"
-                elif "long_range_mem" in model:
-                    mem_id = int(model[-1])
-                    HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                    HH_merged_list = HH_re_list
-                    XXX_re_list = ["\d\d\d"]
-                    XXX_merged_list = ["ALL"]
-
-                    if data_type == "channel":
-                        fn_template = "nwm.t{HH}z.long_range.channel_rt_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif data_type == "land":
-                        fn_template = "nwm.t{HH}z.long_range.land_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif data_type == "reservoir":
-                        fn_template = "nwm.t{HH}z.long_range.reservoir_" + str(mem_id) + ".f{XXX}.conus.nc"
-                    elif data_type == "terrain":
-                        continue
-                log_str = "Merging {model}-{data_type}".format(model=model, data_type=data_type)
-                logger.info(log_str)
-                _perform_merge(HH_re_list=HH_re_list,
-                               HH_merged_list=HH_merged_list,
-                               XXX_re_list=XXX_re_list,
-                               XXX_merged_list=XXX_merged_list,
-                               input_base_path=input_base_path,
-                               model=model,
-                               fn_template=fn_template,
-                               output_base_path=output_base_path,
-                               cleanup=cleanup)
+                            if data_type == "channel":
+                                fn_template = "nwm.t{HH}z.long_range.channel_rt_" + str(mem_id) + ".f{XXX}.conus.nc"
+                            elif data_type == "land":
+                                fn_template = "nwm.t{HH}z.long_range.land_" + str(mem_id) + ".f{XXX}.conus.nc"
+                            elif data_type == "reservoir":
+                                fn_template = "nwm.t{HH}z.long_range.reservoir_" + str(mem_id) + ".f{XXX}.conus.nc"
+                            elif data_type == "terrain":
+                                continue
+                        log_str = "Merging {file_type}-{model_cfg}-{data_type}".format(file_type=file_type,
+                                                                                       model_cfg=model_cfg,
+                                                                                       data_type=data_type)
+                        logger.info(log_str)
+                        _perform_merge(HH_re_list=HH_re_list,
+                                       HH_merged_list=HH_merged_list,
+                                       XXX_re_list=XXX_re_list,
+                                       XXX_merged_list=XXX_merged_list,
+                                       input_folder_path=input_folder_path,
+                                       fn_template=fn_template,
+                                       output_folder_path=output_folder_path,
+                                       cleanup=cleanup)
     pass
 
 
@@ -767,10 +797,9 @@ def _perform_merge(HH_re_list=None,
                    HH_merged_list=None,
                    XXX_re_list=None,
                    XXX_merged_list=None,
-                   input_base_path=None,
-                   model=None,
+                   input_folder_path=None,
                    fn_template=None,
-                   output_base_path=None,
+                   output_folder_path=None,
                    cleanup=True):
 
     ncrcat_cmd_base = ["ncrcat", "-h"]
@@ -785,20 +814,20 @@ def _perform_merge(HH_re_list=None,
 
             re_pattern = fn_template.format(HH=HH_re, XXX=XXX_re)
             pattern = re.compile(re_pattern)
-            data_folder_path = os.path.join(input_base_path, model)
-            if os.path.exists(data_folder_path):
-                folder_content_list = os.listdir(data_folder_path)
+
+            if os.path.exists(input_folder_path):
+                folder_content_list = os.listdir(input_folder_path)
                 fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
                 # only perform merge on 2+ files
                 if len(fn_list) < 2:
                     continue
                 fn_list.sort()
                 fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)
-                fn_merged_path = os.path.join(output_base_path, model, fn_merged)
+                fn_merged_path = os.path.join(output_folder_path, fn_merged)
                 ncrcat_cmd.append("-o")
                 ncrcat_cmd.append(fn_merged_path)
                 for fn in fn_list:
-                    fn_path = os.path.join(data_folder_path, fn)
+                    fn_path = os.path.join(input_folder_path, fn)
                     ncrcat_cmd.append(fn_path)
                     rm_list.append(fn_path)
                 try:
@@ -821,7 +850,7 @@ def _perform_merge(HH_re_list=None,
                     if cleanup:
                         for f in rm_list:
                             os.remove(f)
-                        logger.debug("Files removed: {0}".fromat(str(rm_list)))
+                        logger.debug("Files removed: {0}".format(str(rm_list)))
 
                 except Exception as ex:
                     logger.error(ex.message)

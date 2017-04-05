@@ -1,8 +1,9 @@
+import os
 import logging
 import uuid
 import datetime
 from subset_nwm_netcdf.query import query_comids_and_grid_indices
-from subset_nwm_netcdf.subsetting import start_subset_nwm_netcdf_job
+from subset_nwm_netcdf.subsetting import start_subset_nwm_netcdf_job, start_merge_nwm_netcdf_job
 
 job_id = str(uuid.uuid4())
 
@@ -106,19 +107,19 @@ if __name__ == "__main__":
         cleanup = True
 
         # list of simulation dates
-        simulation_date_list = ["20170327"]
+        simulation_date_list = ["20170328"]
 
         # list of model file types
-        file_type_list = ["forecast", 'forcing']
-        #file_type_list = ["forecast"]
+        #file_type_list = ["forecast", 'forcing']
+        file_type_list = ["forecast"]
 
         # list of model configurations
-        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['long_range_mem3']
+        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_configuration_list = ['short_range']
 
         # list of model result data types
-        #data_type_list = ['channel', 'reservoir', 'land', 'terrain']
-        data_type_list = ['channel', 'reservoir', 'land', 'terrain']
+        #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
+        data_type_list = ['reservoir', 'channel', 'land']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
@@ -132,9 +133,17 @@ if __name__ == "__main__":
 
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
+
+        if "long_range" in model_configuration_list:
+            model_configuration_list.remove("long_range")
+            for i in range(1, 5):
+                model_configuration_list.append("long_range_mem{0}".format(str(i)))
+
+        output_netcdf_folder_path = os.path.join(output_folder_path, job_id)
+
         start_subset_nwm_netcdf_job(job_id=job_id,
                                     input_netcdf_folder_path=netcdf_folder_path,
-                                    output_netcdf_folder_path=output_folder_path,
+                                    output_netcdf_folder_path=output_netcdf_folder_path,
                                     simulation_date_list=simulation_date_list,
                                     file_type_list=file_type_list,
                                     model_configuration_list=model_configuration_list,
@@ -146,6 +155,16 @@ if __name__ == "__main__":
                                     reservoir_comid_list=reservoir_comid_list,
                                     merge_netcdfs=merge_netcdfs,
                                     cleanup=cleanup)
+
+        start_merge_nwm_netcdf_job(job_id=job_id,
+                                   simulation_date_list=simulation_date_list,
+                                   file_type_list=file_type_list,
+                                   model_cfg_list=model_configuration_list,
+                                   data_type_list=data_type_list,
+                                   time_stamp_list=time_stamp_list,
+                                   netcdf_folder_path=output_netcdf_folder_path,
+                                   cleanup=cleanup)
+
 
     except Exception as ex:
         logger.exception(ex.message)

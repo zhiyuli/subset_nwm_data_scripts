@@ -42,6 +42,8 @@ def query_comids_and_grid_indices(job_id=None,
                         }
     '''
 
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
     logger.info("---------------Performing Spatial Query {0}----------------".format(job_id))
     sq_start_dt = datetime.datetime.now()
     logger.info(sq_start_dt)
@@ -119,7 +121,7 @@ def query_comids_and_grid_indices(job_id=None,
         logger.debug(sq_end_dt)
         sq_elapse_dt = sq_end_dt - sq_start_dt
         logger.info("Done in {0}".format(sq_elapse_dt))
-        logger.info("--------------- Spatial Query Done----------------")
+        logger.info("--------------- Spatial Query Done {job_id}----------------".format(job_id=job_id))
 
 
 def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
