@@ -3,7 +3,8 @@ import logging
 import uuid
 import datetime
 from subset_nwm_netcdf.query import query_comids_and_grid_indices
-from subset_nwm_netcdf.subsetting import start_subset_nwm_netcdf_job, start_merge_nwm_netcdf_job
+from subset_nwm_netcdf.subset import start_subset_nwm_netcdf_job
+from subset_nwm_netcdf.merge import start_merge_nwm_netcdf_job
 
 job_id = str(uuid.uuid4())
 
@@ -36,12 +37,12 @@ if __name__ == "__main__":
         # Linux
         #db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
-        # # Shapefile example: utah poylgon
-        # query_type = "shapefile"
-        # shp_path = "./statics/data/utah/utah_utm_nad83_zone_12.shp"
-        # geom_str = None
-        # in_epsg = None # epsg is optional as lib will try to read epsg from prj file
-        # huc_id = None
+        # Shapefile example: utah poylgon
+        query_type = "shapefile"
+        shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        geom_str = None
+        in_epsg = None  # epsg is optional as lib will try to read epsg from prj file
+        huc_id = None
 
         # # geojson example
         # query_type = "geojson"
@@ -63,11 +64,11 @@ if __name__ == "__main__":
         # Bear River-Frontal Great Salt Lake watershed
         # A copy of resulting files were previously stored at
         # https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
-        query_type = "huc_12"
-        shp_path = None
-        geom_str = None
-        in_epsg = None
-        huc_id = "160102040504"
+        # query_type = "huc_12"
+        # shp_path = None
+        # geom_str = None
+        # in_epsg = None
+        # huc_id = "160102040504"
 
         # # huc 10 example
         # query_type = "huc_10"
@@ -107,11 +108,11 @@ if __name__ == "__main__":
         cleanup = True
 
         # list of simulation dates
-        simulation_date_list = ["20170328"]
+        simulation_date_list = ["20170404"]
 
         # list of model file types
-        #file_type_list = ["forecast", 'forcing']
-        file_type_list = ["forecast"]
+        file_type_list = ["forecast", 'forcing']
+        #file_type_list = ["forecast"]
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
@@ -123,7 +124,7 @@ if __name__ == "__main__":
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = []
+        time_stamp_list = [10, 12]
 
         grid_land_dict = query_result_dict["grid_land"]
 
@@ -153,18 +154,17 @@ if __name__ == "__main__":
                                     grid_terrain_dict=grid_terrain_dict,
                                     stream_comid_list=stream_comid_list,
                                     reservoir_comid_list=reservoir_comid_list,
-                                    merge_netcdfs=merge_netcdfs,
                                     cleanup=cleanup)
 
-        start_merge_nwm_netcdf_job(job_id=job_id,
-                                   simulation_date_list=simulation_date_list,
-                                   file_type_list=file_type_list,
-                                   model_cfg_list=model_configuration_list,
-                                   data_type_list=data_type_list,
-                                   time_stamp_list=time_stamp_list,
-                                   netcdf_folder_path=output_netcdf_folder_path,
-                                   cleanup=cleanup)
-
+        if merge_netcdfs:
+            start_merge_nwm_netcdf_job(job_id=job_id,
+                                       simulation_date_list=simulation_date_list,
+                                       file_type_list=file_type_list,
+                                       model_cfg_list=model_configuration_list,
+                                       data_type_list=data_type_list,
+                                       time_stamp_list=time_stamp_list,
+                                       netcdf_folder_path=output_netcdf_folder_path,
+                                       cleanup=cleanup)
 
     except Exception as ex:
         logger.exception(ex.message)

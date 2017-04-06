@@ -16,6 +16,140 @@ default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32
 default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
 
+def start_subset_nwm_netcdf_job(job_id=None,
+                                input_netcdf_folder_path=None,
+                                output_netcdf_folder_path=None,
+                                simulation_date_list=None,
+                                file_type_list=None,
+                                model_configuration_list=None,
+                                data_type_list=None,
+                                time_stamp_list=None,
+                                grid_land_dict=None,
+                                grid_terrain_dict=None,
+                                stream_comid_list=None,
+                                reservoir_comid_list=None,
+                                cleanup=True,
+                                template_version="v1.1",
+                                write_file_list=None):
+    """
+
+    :param job_id: required, used as result folder name
+    :param input_netcdf_folder_path: required, original NWM netcdf base folder path
+    :param output_netcdf_folder_path: required, output results base folder path
+    :param simulation_date_list: required, list of date strings ["20170327", "20170328"]
+    :param file_type_list:  required, ["forecast", 'forcing']
+    :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
+                            "long_range": long_range_mem1-4,
+                            "long_range_mem4": indicate a specific long_range_mem model
+    :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
+    :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
+    :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param stream_comid_list: required, [comid1, comid2, ...]
+    :param reservoir_comid_list: required, [comid1, comid2, ....]
+    :param cleanup: remove intermediate files and only keep merged netcdfs
+    :param write_file_list: internal testing purpose, ignore this parameter
+    :param template_version: "v1.1"
+    :return: no value returned
+    """
+
+    logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
+
+    template_folder_path = default_nc_templates_path
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
+    logger.info("---------------Subsetting {0}----------------".format(job_id))
+    start_dt = datetime.datetime.now()
+    logger.info(start_dt)
+
+    logger.info("job_id={0}".format(str(job_id)))
+    logger.info("input_netcdf_folder_path={0}".format(str(input_netcdf_folder_path)))
+    logger.info("output_netcdf_folder_path={0}".format(str(output_netcdf_folder_path)))
+    logger.info("template_folder_path={0}".format(str(template_folder_path)))
+    logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
+    logger.info("file_type_list={0}".format(str(file_type_list)))
+    logger.info("model_configuration_list={0}".format(str(model_configuration_list)))
+    logger.info("data_type_list={0}".format(str(data_type_list)))
+    logger.info("timestamp={0}".format(str(time_stamp_list)))
+    logger.info("grid_land_dict={0}".format(str(grid_land_dict)))
+    logger.info("grid_terrain_dict={0}".format(str(grid_terrain_dict)))
+    logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
+    logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
+    logger.info("cleanup={0}".format(str(cleanup)))
+    logger.info("write_file_list={0}".format(str(write_file_list)))
+    logger.info("template_version={0}".format(str(template_version)))
+
+    subset_work_dict = {'simulation_date': simulation_date_list,
+                        'file_type': file_type_list,
+                        'model_cfg': model_configuration_list,
+                        'data_type':  data_type_list
+                        }
+
+    for simulation_date in subset_work_dict["simulation_date"]:
+        logger.info("-------------Subsetting {0}--------------------".format(simulation_date))
+        for file_type in subset_work_dict["file_type"]:  # forcing or forecast
+            for model_cfg in subset_work_dict["model_cfg"]:  # aa sr mr lr
+                data_type_list_copy = subset_work_dict['data_type']  # channel, reservoir, land , terrain
+                if file_type == "forcing":
+                    data_type_list_copy = [None]
+                    if "long_range" in model_cfg:
+                        # long_range has no dedicated forcing files
+                        continue
+                for data_type in data_type_list_copy:
+                    try:
+                        if (data_type == "channel" and (stream_comid_list is None or len(stream_comid_list) == 0)) or \
+                                (data_type == "reservoir" and (reservoir_comid_list is None or len(reservoir_comid_list) == 0)):
+                            continue
+                        comid_list = stream_comid_list
+                        if 'reservoir' == data_type:
+                            comid_list = reservoir_comid_list
+
+                        if "long_range" in model_cfg and data_type == "terrain":
+                            # long_range has no terrain outputs
+                            continue
+
+                        if ('land' == data_type and grid_land_dict is None) or \
+                                ('terrain' == data_type and grid_terrain_dict is None):
+                            continue
+                        grid_dict = grid_land_dict
+                        if 'terrain' == data_type:
+                            grid_dict = grid_terrain_dict
+
+                        log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}".\
+                            format(simulation_date=simulation_date, file_type=file_type,
+                                   model_cfg=model_cfg, data_type=data_type)
+                        logger.info(log_str)
+                        sim_start_dt = datetime.datetime.now()
+                        logger.debug(sim_start_dt)
+
+                        _subset_nwm_netcdf(job_id=job_id,
+                                           grid_dict=grid_dict,
+                                           comid_list=comid_list,
+                                           simulation_date=simulation_date,
+                                           file_type=file_type,
+                                           model_cfg=model_cfg,
+                                           data_type=data_type,
+                                           time_stamp_list=time_stamp_list,
+                                           input_folder_path=input_netcdf_folder_path,
+                                           output_folder_path=output_netcdf_folder_path,
+                                           template_folder_path=template_folder_path,
+                                           template_version=template_version,
+                                           write_file_list=write_file_list,
+                                           cleanup=cleanup)
+                        sim_end_dt = datetime.datetime.now()
+                        logger.debug(sim_end_dt)
+                        sim_elapsed = sim_end_dt - sim_start_dt
+                        logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
+                    except Exception as ex:
+                        logger.exception(str(type(ex)) + ex.message)
+
+    end_dt = datetime.datetime.now()
+    logger.debug(end_dt)
+    elapse_dt = end_dt - start_dt
+    logger.info("Subsetting Done in {0}".format(elapse_dt))
+    logger.info("---------------------Subsetting Done {job_id}-----------------------------".format(job_id=job_id))
+
+
 def _render_cdl_file(content_list=[], file_path=None):
     for item in content_list:
         _replace_text_in_file(search_text=item[0], replace_text=item[1], file_path=file_path)
@@ -123,7 +257,6 @@ def _subset_nwm_netcdf(job_id=None,
             elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.reservoir.tmXX.conus.cdl_template"
             elif data_type == "terrain":
-                #raise NotImplementedError()
                 cdl_template_filename = "nwm.tHHz.analysis_assim.terrain_rt.tmXX.conus.cdl_template"
 
         elif model_cfg == "short_range":
@@ -137,7 +270,6 @@ def _subset_nwm_netcdf(job_id=None,
             elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.short_range.reservoir.fXXX.conus.cdl_template"
             elif data_type == "terrain":
-                #raise NotImplementedError()
                 cdl_template_filename = "nwm.tHHz.short_range.terrain_rt.fXXX.conus.cdl_template"
 
         elif model_cfg == "medium_range":
@@ -151,7 +283,6 @@ def _subset_nwm_netcdf(job_id=None,
             elif data_type == "reservoir":
                 cdl_template_filename = "nwm.tHHz.medium_range.reservoir.fXXX.conus.cdl_template"
             elif data_type == "terrain":
-                #raise NotImplementedError()
                 cdl_template_filename = "nwm.tHHz.medium_range.terrain_rt.fXXX.conus.cdl_template"
 
         elif "long_range_mem" in model_cfg:
@@ -313,178 +444,6 @@ def _subset_nwm_netcdf(job_id=None,
         # remove nc_template folder
         if os.path.exists(out_nc_folder_template_path):
             shutil.rmtree(out_nc_folder_template_path)
-            logger.debug("Folder removed: {0}".format(out_nc_folder_template_path))
-
-
-def start_subset_nwm_netcdf_job(job_id=None,
-                                input_netcdf_folder_path=None,
-                                output_netcdf_folder_path=None,
-                                simulation_date_list=None,
-                                file_type_list=None,
-                                model_configuration_list=None,
-                                data_type_list=None,
-                                time_stamp_list=None,
-                                grid_land_dict=None,
-                                grid_terrain_dict=None,
-                                stream_comid_list=None,
-                                reservoir_comid_list=None,
-                                merge_netcdfs=True,
-                                cleanup=True,
-                                template_version="v1.1",
-                                write_file_list=None):
-    """
-
-    :param job_id: required, used as result folder name
-    :param input_netcdf_folder_path: required, original NWM netcdf base folder path
-    :param output_netcdf_folder_path: required, output results base folder path
-    :param simulation_date_list: required, list of date strings ["20170327", "20170328"]
-    :param file_type_list:  required, ["forecast", 'forcing']
-    :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
-                            "long_range": long_range_mem1-4,
-                            "long_range_mem4": indicate a specific long_range_mem model
-    :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
-    :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
-    :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
-    :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
-    :param stream_comid_list: required, [comid1, comid2, ...]
-    :param reservoir_comid_list: required, [comid1, comid2, ....]
-    :param merge_netcdfs: True: merge netcdf after subsetting
-    :param cleanup: remove intermediate files and only keep merged netcdfs
-    :param write_file_list: internal testing purpose, ignore this parameter
-    :param template_version: "v1.1"
-    :return: no value returned
-    """
-
-    logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
-
-    template_folder_path = default_nc_templates_path
-    if job_id is None:
-        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
-    logger.info("---------------Subsetting {0}----------------".format(job_id))
-    start_dt = datetime.datetime.now()
-    logger.info(start_dt)
-
-    logger.info("job_id={0}".format(str(job_id)))
-    logger.info("input_netcdf_folder_path={0}".format(str(input_netcdf_folder_path)))
-    logger.info("output_netcdf_folder_path={0}".format(str(output_netcdf_folder_path)))
-    logger.info("template_folder_path={0}".format(str(template_folder_path)))
-    logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
-    logger.info("file_type_list={0}".format(str(file_type_list)))
-    logger.info("model_configuration_list={0}".format(str(model_configuration_list)))
-    logger.info("data_type_list={0}".format(str(data_type_list)))
-    logger.info("timestamp={0}".format(str(time_stamp_list)))
-    logger.info("grid_land_dict={0}".format(str(grid_land_dict)))
-    logger.info("grid_terrain_dict={0}".format(str(grid_terrain_dict)))
-    logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
-    logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
-    logger.info("merge_netcdfs={0}".format(str(merge_netcdfs)))
-    logger.info("cleanup={0}".format(str(cleanup)))
-    logger.info("write_file_list={0}".format(str(write_file_list)))
-    logger.info("template_version={0}".format(str(template_version)))
-
-    subset_work_dict = {'simulation_date': simulation_date_list,
-                        'file_type': file_type_list,
-                        'model_cfg': model_configuration_list,
-                        'data_type':  data_type_list
-                        }
-
-    for simulation_date in subset_work_dict["simulation_date"]:
-        logger.info("-------------Subsetting {0}--------------------".format(simulation_date))
-        for file_type in subset_work_dict["file_type"]:  # forcing or forecast
-            for model_cfg in subset_work_dict["model_cfg"]:  # aa sr mr lr
-                data_type_list_copy = subset_work_dict['data_type']  # channel, reservoir, land , terrain
-                if file_type == "forcing":
-                    data_type_list_copy = [None]
-                    if "long_range" in model_cfg:
-                        # long_range has no dedicated forcing files
-                        continue
-                for data_type in data_type_list_copy:
-                    try:
-                        if (data_type == "channel" and len(stream_comid_list) == 0) or \
-                                (data_type == "reservoir" and len(reservoir_comid_list) == 0):
-                            continue
-                        comid_list = stream_comid_list
-                        if 'reservoir' == data_type:
-                            comid_list = reservoir_comid_list
-
-                        if "long_range" in model_cfg and data_type == "terrain":
-                            # long_range has no terrain outputs
-                            continue
-
-                        if ('land' == data_type and grid_land_dict is None) or \
-                                ('terrain' == data_type and grid_terrain_dict is None):
-                            continue
-                        grid_dict = grid_land_dict
-                        if 'terrain' == data_type:
-                            grid_dict = grid_terrain_dict
-
-                        log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}".\
-                            format(simulation_date=simulation_date, file_type=file_type,
-                                   model_cfg=model_cfg, data_type=data_type)
-                        logger.info(log_str)
-                        sim_start_dt = datetime.datetime.now()
-                        logger.debug(sim_start_dt)
-
-                        _subset_nwm_netcdf(job_id=job_id,
-                                           grid_dict=grid_dict,
-                                           comid_list=comid_list,
-                                           simulation_date=simulation_date,
-                                           file_type=file_type,
-                                           model_cfg=model_cfg,
-                                           data_type=data_type,
-                                           time_stamp_list=time_stamp_list,
-                                           input_folder_path=input_netcdf_folder_path,
-                                           output_folder_path=output_netcdf_folder_path,
-                                           template_folder_path=template_folder_path,
-                                           template_version=template_version,
-                                           write_file_list=write_file_list,
-                                           cleanup=cleanup)
-                        sim_end_dt = datetime.datetime.now()
-                        logger.debug(sim_end_dt)
-                        sim_elapsed = sim_end_dt - sim_start_dt
-                        logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
-                    except Exception as ex:
-                        logger.exception(str(type(ex)) + ex.message)
-
-    end_dt = datetime.datetime.now()
-    logger.debug(end_dt)
-    elapse_dt = end_dt - start_dt
-    logger.info(elapse_dt)
-    logger.info("---------------------Subsetting Done {job_id}-----------------------------".format(job_id=job_id))
-
-
-def start_merge_nwm_netcdf_job(job_id=None,
-                               simulation_date_list=None,
-                               file_type_list=None,
-                               model_cfg_list=None,
-                               data_type_list=None,
-                               time_stamp_list=None,
-                               netcdf_folder_path=None,
-                               cleanup=True):
-    try:
-        if job_id is None:
-            job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
-        logger.info("---------------------Start Merging {job_id}-----------------------------".format(job_id=job_id))
-        merge_start_dt = datetime.datetime.now()
-        logger.debug(merge_start_dt)
-
-        _merge_nwm_netcdf(simulation_date_list=simulation_date_list,
-                          file_type_list=file_type_list,
-                          model_cfg_list=model_cfg_list,
-                          data_type_list=data_type_list,
-                          time_stamp_list=time_stamp_list,
-                          input_base_path=netcdf_folder_path,
-                          output_base_path=netcdf_folder_path,
-                          cleanup=cleanup)
-
-        merge_end_dt = datetime.datetime.now()
-        logger.debug(merge_end_dt)
-        merge_elapse_dt = merge_end_dt - merge_start_dt
-        logger.info(merge_elapse_dt)
-        logger.info("---------------------Merge Done {job_id}-----------------------------".format(job_id=job_id))
-    except Exception as ex:
-        logger.exception(str(type(ex)) + ex.message)
-    pass
 
 
 def _subset_grid_file(in_nc_file=None,
@@ -660,199 +619,3 @@ def _subset_comid_file(in_nc_file=None,
             return comid_list_np, index_list, direct_read
         else:
             return comid_list, None, direct_read
-
-
-def _merge_nwm_netcdf(simulation_date_list=None,
-                     file_type_list=None,
-                     model_cfg_list=None,
-                     data_type_list=None,
-                     time_stamp_list=None,
-                     input_base_path=None,
-                     output_base_path=None,
-                     cleanup=True):
-
-    if output_base_path is None:
-        output_base_path = input_base_path
-
-    for simulation_date in simulation_date_list:
-        simulation_folder_name = "nwm.{simulation_date}".format(simulation_date=simulation_date)
-        logger.info("Merging {0}".format(simulation_folder_name))
-        input_folder_path = os.path.join(input_base_path, simulation_folder_name)
-        output_folder_path = os.path.join(output_base_path, simulation_folder_name)
-        for file_type in file_type_list:
-            for model_cfg in model_cfg_list:
-                if file_type == "forcing":
-                    model_configuration_folder_name = file_type + "_" + model_cfg
-                    input_folder_path = os.path.join(input_folder_path, model_configuration_folder_name)
-                    output_folder_path = os.path.join(output_folder_path, model_configuration_folder_name)
-                    if "analysis_assim" == model_cfg:
-                        fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
-                        HH_re_list = ["\d\d"]
-                        HH_merged_list = ["ALL"]
-                        XXX_re_list = ["00", "01", "02"]
-                        XXX_merged_list = ["00", "01", "02"]
-                    elif "short_range" == model_cfg:
-                        fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
-                        HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
-                        HH_merged_list = HH_re_list
-                        XXX_re_list = ["\d\d\d"]
-                        XXX_merged_list = ["ALL"]
-                    elif "medium_range" == model_cfg:
-                        fn_template = "nwm.t{HH}z.medium_range.forcing.f{XXX}.conus.nc"
-                        HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                        HH_merged_list = HH_re_list
-                        XXX_re_list = ["\d\d\d"]
-                        XXX_merged_list = ["ALL"]
-                    log_str = "Merging {file_type}-{model_cfg}-{data_type}".format(file_type=file_type,
-                                                                                   model_cfg=model_cfg,
-                                                                                   data_type=data_type)
-                    logger.info(log_str)
-                    _perform_merge(HH_re_list=HH_re_list,
-                                   HH_merged_list=HH_merged_list,
-                                   XXX_re_list=XXX_re_list,
-                                   XXX_merged_list=XXX_merged_list,
-                                   input_folder_path=input_base_path,
-                                   fn_template=fn_template,
-                                   output_folder_path=output_base_path,
-                                   cleanup=cleanup)
-
-                else:  # forecast
-                    model_configuration_folder_name = model_cfg
-                    input_folder_path = os.path.join(input_folder_path, model_configuration_folder_name)
-                    output_folder_path = os.path.join(output_folder_path, model_configuration_folder_name)
-                    for data_type in data_type_list:
-                        if "analysis_assim" == model_cfg:
-                            HH_re_list = ["\d\d"]
-                            HH_merged_list = ["ALL"]
-                            XXX_re_list = ["00", "01", "02"]
-                            XXX_merged_list = ["00", "01", "02"]
-
-                            if data_type == "channel":
-                                fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
-                            elif data_type == "land":
-                                fn_template = "nwm.t{HH}z.analysis_assim.land.tm{XXX}.conus.nc"
-                            elif data_type == "reservoir":
-                                fn_template = "nwm.t{HH}z.analysis_assim.reservoir.tm{XXX}.conus.nc"
-                            elif data_type == "terrain":
-                                fn_template = "nwm.t{HH}z.analysis_assim.terrain_rt.tm{XXX}.conus.nc"
-                        elif "short_range" == model_cfg:
-                            HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
-                            HH_merged_list = HH_re_list
-                            XXX_re_list = ["\d\d\d"]
-                            XXX_merged_list = ["ALL"]
-
-                            if data_type == "channel":
-                                fn_template = "nwm.t{HH}z.short_range.channel_rt.f{XXX}.conus.nc"
-                            elif data_type == "land":
-                                fn_template = "nwm.t{HH}z.short_range.land.f{XXX}.conus.nc"
-                            elif data_type == "reservoir":
-                                fn_template = "nwm.t{HH}z.short_range.reservoir.f{XXX}.conus.nc"
-                            elif data_type == "terrain":
-                                fn_template = "nwm.t{HH}z.short_range.terrain_rt.f{XXX}.conus.nc"
-                        elif "medium_range" == model_cfg:
-                            HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                            HH_merged_list = HH_re_list
-                            XXX_re_list = ["\d\d\d"]
-                            XXX_merged_list = ["ALL"]
-
-                            if data_type == "channel":
-                                fn_template = "nwm.t{HH}z.medium_range.channel_rt.f{XXX}.conus.nc"
-                            elif data_type == "land":
-                                fn_template = "nwm.t{HH}z.medium_range.land.f{XXX}.conus.nc"
-                            elif data_type == "reservoir":
-                                fn_template = "nwm.t{HH}z.medium_range.reservoir.f{XXX}.conus.nc"
-                            elif data_type == "terrain":
-                                fn_template = "nwm.t{HH}z.medium_range.terrain_rt.f{XXX}.conus.nc"
-                        elif "long_range_mem" in model_cfg:
-                            mem_id = int(model_cfg[-1])
-                            HH_re_list = [str(i).zfill(2) for i in range(0, 19, 6)]
-                            HH_merged_list = HH_re_list
-                            XXX_re_list = ["\d\d\d"]
-                            XXX_merged_list = ["ALL"]
-
-                            if data_type == "channel":
-                                fn_template = "nwm.t{HH}z.long_range.channel_rt_" + str(mem_id) + ".f{XXX}.conus.nc"
-                            elif data_type == "land":
-                                fn_template = "nwm.t{HH}z.long_range.land_" + str(mem_id) + ".f{XXX}.conus.nc"
-                            elif data_type == "reservoir":
-                                fn_template = "nwm.t{HH}z.long_range.reservoir_" + str(mem_id) + ".f{XXX}.conus.nc"
-                            elif data_type == "terrain":
-                                continue
-                        log_str = "Merging {file_type}-{model_cfg}-{data_type}".format(file_type=file_type,
-                                                                                       model_cfg=model_cfg,
-                                                                                       data_type=data_type)
-                        logger.info(log_str)
-                        _perform_merge(HH_re_list=HH_re_list,
-                                       HH_merged_list=HH_merged_list,
-                                       XXX_re_list=XXX_re_list,
-                                       XXX_merged_list=XXX_merged_list,
-                                       input_folder_path=input_folder_path,
-                                       fn_template=fn_template,
-                                       output_folder_path=output_folder_path,
-                                       cleanup=cleanup)
-    pass
-
-
-def _perform_merge(HH_re_list=None,
-                   HH_merged_list=None,
-                   XXX_re_list=None,
-                   XXX_merged_list=None,
-                   input_folder_path=None,
-                   fn_template=None,
-                   output_folder_path=None,
-                   cleanup=True):
-
-    ncrcat_cmd_base = ["ncrcat", "-h"]
-    for i in range(len(HH_re_list)):
-        HH_re = HH_re_list[i]
-        HH_merged = HH_merged_list[i]
-        for j in range(len(XXX_re_list)):
-            rm_list = []
-            ncrcat_cmd = copy.copy(ncrcat_cmd_base)
-            XXX_re = XXX_re_list[j]
-            XXX_merged = XXX_merged_list[j]
-
-            re_pattern = fn_template.format(HH=HH_re, XXX=XXX_re)
-            pattern = re.compile(re_pattern)
-
-            if os.path.exists(input_folder_path):
-                folder_content_list = os.listdir(input_folder_path)
-                fn_list = [fn for fn in folder_content_list if pattern.match(fn)]
-                # only perform merge on 2+ files
-                if len(fn_list) < 2:
-                    continue
-                fn_list.sort()
-                fn_merged = fn_template.format(HH=HH_merged, XXX=XXX_merged)
-                fn_merged_path = os.path.join(output_folder_path, fn_merged)
-                ncrcat_cmd.append("-o")
-                ncrcat_cmd.append(fn_merged_path)
-                for fn in fn_list:
-                    fn_path = os.path.join(input_folder_path, fn)
-                    ncrcat_cmd.append(fn_path)
-                    rm_list.append(fn_path)
-                try:
-                    proc = subprocess.Popen(ncrcat_cmd,
-                                            stdin=subprocess.PIPE,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            )
-                    proc.wait()
-                    stdout, stderr = proc.communicate()
-                    if stdout:
-                        logger.debug(stdout.rstrip())
-                    if stderr:
-                        if "INFO/WARNING".lower() in stderr.lower():
-                            logger.debug(stderr.rstrip())
-                        else:
-                            logger.error(stderr.rstrip())
-                            logger.error(str(ncrcat_cmd))
-
-                    if cleanup:
-                        for f in rm_list:
-                            os.remove(f)
-                        logger.debug("Files removed: {0}".format(str(rm_list)))
-
-                except Exception as ex:
-                    logger.error(ex.message)
-                    logger.error(str(ncrcat_cmd))
-    pass
