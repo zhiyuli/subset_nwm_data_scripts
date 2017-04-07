@@ -34,12 +34,14 @@ if __name__ == "__main__":
         # Path to geodatabase file (download from https://www.hydroshare.org/resource/95410260015a4fd1858a3ad3c4aa7f17/)
         # Windows
         db_file_path = "F:/NWM/DB/nwm.sqlite"
+        db_file_terrain_path = "F:/NWM/DB/nwm2.sqlite"
         # Linux
         #db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
         # Shapefile example: utah poylgon
         query_type = "shapefile"
-        shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        # shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
         in_epsg = None  # epsg is optional as lib will try to read epsg from prj file
         huc_id = None
@@ -60,10 +62,10 @@ if __name__ == "__main__":
         # in_epsg = 26912 # epsg is required
         # huc_id = None
 
-        # huc 12 example
-        # Bear River-Frontal Great Salt Lake watershed
-        # A copy of resulting files were previously stored at
-        # https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
+        # # huc 12 example
+        # # Bear River-Frontal Great Salt Lake watershed
+        # # A copy of resulting files were previously stored at
+        # # https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
         # query_type = "huc_12"
         # shp_path = None
         # geom_str = None
@@ -86,6 +88,7 @@ if __name__ == "__main__":
 
         query_result_dict = query_comids_and_grid_indices(job_id=job_id,
                                                           db_file_path=db_file_path,
+                                                          db_file_terrain_path=db_file_terrain_path,
                                                           query_type=query_type,
                                                           shp_path=shp_path,
                                                           geom_str=geom_str,
@@ -115,22 +118,22 @@ if __name__ == "__main__":
         #file_type_list = ["forecast"]
 
         # list of model configurations
-        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_configuration_list = ['short_range']
+        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_configuration_list = ['short_range']
 
         # list of model result data types
-        #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        data_type_list = ['reservoir', 'channel', 'land']
+        data_type_list = ['reservoir', 'channel', 'land', 'terrain']
+        #data_type_list = ['terrain']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = [10, 12]
+        time_stamp_list = []
 
         grid_land_dict = query_result_dict["grid_land"]
 
         # change this line back once terrain gdb is ready
-        #grid_terrain_dict = query_result_dict["grid_terrain"]
-        grid_terrain_dict = query_result_dict["grid_land"]
+        grid_terrain_dict = query_result_dict["grid_terrain"]
+        #grid_terrain_dict = query_result_dict["grid_land"]
 
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]

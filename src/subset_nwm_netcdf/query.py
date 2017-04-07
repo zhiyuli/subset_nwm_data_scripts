@@ -16,6 +16,7 @@ logger = logging.getLogger('subset_nwm_netcdf')
 
 def query_comids_and_grid_indices(job_id=None,
                                   db_file_path=None,
+                                  db_file_terrain_path=None,
                                   db_epsg_code=4269,
                                   query_type="shapefile",
                                   shp_path=None,
@@ -60,7 +61,7 @@ def query_comids_and_grid_indices(job_id=None,
         query_type_lower = query_type.lower()
         query_stream = True
         query_land_grid = True
-        query_terrain_grid = False
+        query_terrain_grid = True
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
@@ -88,6 +89,7 @@ def query_comids_and_grid_indices(job_id=None,
 
         polygon_query_window = shapely.geometry.Polygon(polygon_exterior_linearring)
         data = _perform_spatial_query(db_file=db_file_path,
+                                      db_file_terrain=db_file_terrain_path,
                                       db_epsg=db_epsg_code,
                                       query_window_wkt=polygon_query_window.wkt,
                                       input_epsg=in_epsg_checked,
@@ -202,6 +204,7 @@ def _check_supported_epsg(epsg=None, db_file=None):
 
 
 def _perform_spatial_query(db_file=None,
+                           db_file_terrain=None,
                            db_epsg=None,
                            query_window_wkt=None,
                            input_epsg=None,
@@ -251,22 +254,35 @@ def _perform_spatial_query(db_file=None,
                                  "minY": grid_indices[2], "maxY": grid_indices[3]}
 
         if query_terrain_grid:
-            query_table_name = 'grid_terrain'
-            query_string = 'min(grid_terrain.west_east) AS minX, '\
-                           'max(grid_terrain.west_east) AS maxX, '\
-                           'min(grid_terrain.south_north) AS minY, '\
-                           'max(grid_terrain.south_north) AS maxY'
+            # query_table_name = 'grid_terrain'
+            # query_string = 'min(grid_terrain.west_east) AS minX, '\
+            #                'max(grid_terrain.west_east) AS maxX, '\
+            #                'min(grid_terrain.south_north) AS minY, '\
+            #                'max(grid_terrain.south_north) AS maxY'
+
+            query_table_name = 'terrain_pnt'
+            query_string = 'min(terrain_pnt.x_index) AS minX, '\
+                           'max(terrain_pnt.x_index) AS maxX, '\
+                           'min(terrain_pnt.y_index) AS minY, '\
+                           'max(terrain_pnt.y_index) AS maxY'
+
+            input_geom_terrain = "ST_Transform(GeomFromText('{input_wkt}', {input_epsg}), {db_epsg})".format(
+                            input_wkt=query_window_wkt, input_epsg=input_epsg, db_epsg=33333)
 
             sql_grid_terrain = sql_template.format(query_table_name=query_table_name,
                                                    query_string=query_string,
                                                    geometry_field_name=geometry_field_name,
-                                                   input_geom=input_geom)
+                                                   input_geom=input_geom_terrain)
 
-            cursor = conn.execute(sql_grid_terrain)
+            conn_terrain = db.connect(db_file_terrain)
+            conn_terrain.enable_load_extension(True)
+            conn_terrain.execute("SELECT load_extension('mod_spatialite')")
+            geometry_field_name = 'Shape'
+            cursor = conn_terrain.execute(sql_grid_terrain)
             grid_indices = list(cursor.fetchone())
             data['grid_terrain'] = {"minX": grid_indices[0], "maxX": grid_indices[1],
                                     "minY": grid_indices[2], "maxY": grid_indices[3]}
-
+            conn_terrain.close()
         if query_stream:
             query_table_name = 'stream'
             query_string = 'station_id'

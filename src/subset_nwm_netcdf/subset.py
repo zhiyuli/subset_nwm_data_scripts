@@ -331,7 +331,8 @@ def _subset_nwm_netcdf(job_id=None,
     if type(time_stamp_list) is list and len(time_stamp_list) > 0:
         for var in var_list:
             if var[0] == "HH":
-                var[1] = time_stamp_list
+                # use the common part of two lists
+                var[1] = list(set(var[1]).intersection(set(time_stamp_list)))
                 break
     nc_file_name = nc_template_file_name
     nc_filename_list = [nc_file_name]
