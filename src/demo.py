@@ -34,13 +34,17 @@ if __name__ == "__main__":
         # Path to geodatabase file (download from https://www.hydroshare.org/resource/95410260015a4fd1858a3ad3c4aa7f17/)
         # Windows
         db_file_path = "F:/NWM/DB/nwm.sqlite"
-        db_file_terrain_path = "F:/NWM/DB/nwm2.sqlite"
+        tif_file_terrain = "F:/NWM/DB/xy_terrain_NAD1983.tif"
+        tif_file_land = "F:/NWM/DB/xy_land_NAD1983.tif"
+
         # Linux
         #db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        #tif_file_terrain = "/home/drew/Desktop/xy_terrain_NAD1983.tif"
+        #tif_file_land = "/home/drew/Desktop/xy_land_NAD1983.tif"
 
-        # Shapefile example: utah poylgon
+        # Shapefile example: utah polygon
         query_type = "shapefile"
-        # shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
         shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
         in_epsg = None  # epsg is optional as lib will try to read epsg from prj file
@@ -49,17 +53,15 @@ if __name__ == "__main__":
         # # geojson example
         # query_type = "geojson"
         # shp_path = None
-        # geom_str = '{"type":"Polygon",' \
-        #            '"coordinates":[[[-109.436035, 43.011979],[-93.361976,42.599528],' \
-        #            '[-92.768481,34.295595],[-111.418367,34.515505],[-109.436035, 43.011979]]]}'
-        # in_epsg = 4326 # epsg is required
+        # geom_str = '{ "type": "Polygon", "coordinates": [ [ [ -111.0, 39.000000000002537 ], [ -111.0, 40.000000000003041 ], [ -110.0, 40.000000000003048 ], [ -110.0, 39.000000000002551 ], [ -111.0, 39.000000000002537 ] ] ] }'
+        # in_epsg = 4269  # epsg is required
         # huc_id = None
 
         # # wkt example
         # query_type = "wkt"
         # shp_path = None
         # geom_str = "POLYGON((500000 4316776.583097936,500000 4427757.218624833,585360.4618433624 4428236.064519553,586592.6780279021 4317252.164517585,500000 4316776.583097936))"
-        # in_epsg = 26912 # epsg is required
+        # in_epsg = 26912  # epsg is required
         # huc_id = None
 
         # # huc 12 example
@@ -88,7 +90,8 @@ if __name__ == "__main__":
 
         query_result_dict = query_comids_and_grid_indices(job_id=job_id,
                                                           db_file_path=db_file_path,
-                                                          db_file_terrain_path=db_file_terrain_path,
+                                                          tif_file_terrain=tif_file_terrain,
+                                                          tif_file_land=tif_file_land,
                                                           query_type=query_type,
                                                           shp_path=shp_path,
                                                           geom_str=geom_str,
@@ -123,18 +126,14 @@ if __name__ == "__main__":
 
         # list of model result data types
         data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        #data_type_list = ['terrain']
+        #data_type_list = ['land', 'terrain']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
         time_stamp_list = []
 
         grid_land_dict = query_result_dict["grid_land"]
-
-        # change this line back once terrain gdb is ready
         grid_terrain_dict = query_result_dict["grid_terrain"]
-        #grid_terrain_dict = query_result_dict["grid_land"]
-
         stream_comid_list = query_result_dict["stream"]["comids"]
         reservoir_comid_list = query_result_dict["reservoir"]["comids"]
 
