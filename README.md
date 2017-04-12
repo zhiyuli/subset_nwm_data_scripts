@@ -45,7 +45,7 @@ Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 a
 
 3) pysqlite with mod_spatialite extension @ https://pypi.python.org/pypi/pysqlite/ and https://www.gaia-gis.it/fossil/libspatialite/wiki?name=mod_spatialite
 
-4) GDAL (gdal/ogr python bindings) @ https://pypi.python.org/pypi/GDAL
+4) GDAL 2.1 or later @ https://pypi.python.org/pypi/GDAL
 
 5) spatial query supporting files @ https://www.hydroshare.org/resource/e8434e287ada4540be814fa7275fb749/
 

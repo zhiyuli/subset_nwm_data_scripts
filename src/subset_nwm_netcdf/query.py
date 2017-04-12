@@ -327,6 +327,7 @@ def _query_grid_indices(wkt_str=None,
     #                dstNodata=65535,
     #                warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
 
+    # gdal.Warp() implemented in GDAL 2.1 and later
     ds = gdal.Warp("",
                    tif_file_path,
                    format='MEM',
