@@ -19,7 +19,9 @@ Subset module --> Merge module --> regional NetCDF files
 ## Usage
 See demo.py in source
 
-The copy of the resulting NetCDF files of a huc_12 watershed (comid: 160102040504) for date 20170327 can be found at https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
+The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
+
+The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
 ## What's new in 1.1.3 ?
 1) Support subsetting more files:
