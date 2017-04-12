@@ -8,8 +8,8 @@ import fiona
 import shapely.wkt
 import shapely.geometry
 # import pyspatialite.dbapi2 as db
-import pysqlite2.dbapi2 as db
-
+import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
+from osgeo import gdal, ogr, osr
 
 logger = logging.getLogger('subset_nwm_netcdf')
 
@@ -17,6 +17,8 @@ logger = logging.getLogger('subset_nwm_netcdf')
 def query_comids_and_grid_indices(job_id=None,
                                   db_file_path=None,
                                   db_epsg_code=4269,
+                                  tif_file_land=None,
+                                  tif_file_terrain=None,
                                   query_type="shapefile",
                                   shp_path=None,
                                   geom_str=None,
@@ -29,7 +31,7 @@ def query_comids_and_grid_indices(job_id=None,
     :param db_file_path: full path to NWM spatialite geodatabase file
     :param db_epsg_code: the epsg code of NWM spatialite geodatabase (default 4269)
     :param job_id: a job identifier
-    :param query_type: "shapefile", "wkt", "geojson", "huc_12", "huc_10", "huc_8", "stream"
+    :param query_type: "shapefile", "wkt", "geojson", "huc_12", "huc_10", "huc_8", ("stream": not supported yet)
     :param shp_path: full path to *.shp file
     :param geom_str: wkt or geojson string
     :param in_epsg: epsg code of geom_str or shapefile
@@ -42,10 +44,16 @@ def query_comids_and_grid_indices(job_id=None,
                         }
     '''
 
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
     logger.info("---------------Performing Spatial Query {0}----------------".format(job_id))
     sq_start_dt = datetime.datetime.now()
     logger.info(sq_start_dt)
 
+    logger.info("db_file_path: {0}".format(str(db_file_path)))
+    logger.info("db_epsg_code: {0}".format(str(db_epsg_code)))
+    logger.info("tif_file_land: {0}".format(str(tif_file_land)))
+    logger.info("tif_file_terrain: {0}".format(str(tif_file_terrain)))
     logger.info("query_type: {0}".format(str(query_type)))
     logger.info("shp_path: {0}".format(str(shp_path)))
     logger.info("geom_str: {0}".format(str(geom_str)))
@@ -57,12 +65,16 @@ def query_comids_and_grid_indices(job_id=None,
         in_epsg_checked = None
         query_type_lower = query_type.lower()
         query_stream = True
-        query_grid = True
+        query_land_grid = True
+        query_terrain_grid = True
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
-            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path, query_type_lower=query_type_lower,
-                                                                in_epsg=in_epsg, shp_path=shp_path, geom_str=geom_str)
+            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path,
+                                                                query_type_lower=query_type_lower,
+                                                                in_epsg=in_epsg,
+                                                                shp_path=shp_path,
+                                                                geom_str=geom_str)
         elif "huc" in query_type_lower:
 
             shape_obj, in_epsg_checked = _get_huc_bbox_shapely_shape_obj(db_file=db_file_path,
@@ -82,31 +94,45 @@ def query_comids_and_grid_indices(job_id=None,
 
         polygon_query_window = shapely.geometry.Polygon(polygon_exterior_linearring)
         data = _perform_spatial_query(db_file=db_file_path,
+                                      tif_file_terrain=tif_file_terrain,
+                                      tif_file_land=tif_file_land,
                                       db_epsg=db_epsg_code,
                                       query_window_wkt=polygon_query_window.wkt,
                                       input_epsg=in_epsg_checked,
                                       query_stream=query_stream,
-                                      query_grid=query_grid,
+                                      query_land_grid=query_land_grid,
+                                      query_terrain_grid=query_terrain_grid,
                                       query_reservoir=query_reservoir)
 
-        logger.info("grid: {0}".format(str(data["grid_land"])))
-        dim_x_len = data["grid_land"]['maxX'] - data["grid_land"]['minX'] + 1
-        dim_y_len = data["grid_land"]['maxY'] - data["grid_land"]['minY'] + 1
-        logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
-                                                         cells=str(dim_x_len * dim_y_len)))
-        logger.info("stream count: {0}".format(str(data["stream"]["count"])))
-        logger.info("reservoir count: {0}".format(str(data["reservoir"]["count"])))
+        if data["status"] == "success":
+            if "grid_land" in data:
+                logger.info("grid_land: {0}".format(str(data["grid_land"])))
+                dim_x_len = data["grid_land"]['maxX'] - data["grid_land"]['minX'] + 1
+                dim_y_len = data["grid_land"]['maxY'] - data["grid_land"]['minY'] + 1
+                logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
+                                                                 cells=str(dim_x_len * dim_y_len)))
+            if "grid_terrain" in data:
+                logger.info("grid_terrain: {0}".format(str(data["grid_terrain"])))
+                dim_x_len = data["grid_terrain"]['maxX'] - data["grid_terrain"]['minX'] + 1
+                dim_y_len = data["grid_terrain"]['maxY'] - data["grid_terrain"]['minY'] + 1
+                logger.info("{x_len} * {y_len} = {cells}".format(x_len=str(dim_x_len), y_len=str(dim_y_len),
+                                                                 cells=str(dim_x_len * dim_y_len)))
+
+            logger.info("stream count: {0}".format(str(data["stream"]["count"])))
+            logger.info("reservoir count: {0}".format(str(data["reservoir"]["count"])))
+        else:
+            raise Exception()
 
         return data
     except Exception as ex:
         logger.error("Spatial Query Failed")
-        logger.exception(ex.message)
+        logger.exception("{0}: {1}".format(str(type(ex)), ex.message))
     finally:
         sq_end_dt = datetime.datetime.now()
         logger.debug(sq_end_dt)
         sq_elapse_dt = sq_end_dt - sq_start_dt
         logger.info("Done in {0}".format(sq_elapse_dt))
-        logger.info("--------------- Spatial Query Done----------------")
+        logger.info("--------------- Spatial Query Done {job_id}----------------".format(job_id=job_id))
 
 
 def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
@@ -187,12 +213,15 @@ def _check_supported_epsg(epsg=None, db_file=None):
 
 
 def _perform_spatial_query(db_file=None,
-                          db_epsg=None,
-                          query_window_wkt=None,
-                          input_epsg=None,
-                          query_stream=True,
-                          query_grid=True,
-                          query_reservoir=True):
+                           tif_file_land=None,
+                           tif_file_terrain=None,
+                           db_epsg=None,
+                           query_window_wkt=None,
+                           input_epsg=None,
+                           query_stream=True,
+                           query_land_grid=True,
+                           query_terrain_grid=True,
+                           query_reservoir=True):
 
     conn = None
     data = {"status": "success"}
@@ -217,22 +246,6 @@ def _perform_spatial_query(db_file=None,
         conn.execute("SELECT load_extension('mod_spatialite')")
         geometry_field_name = 'Shape'
 
-        if query_grid:
-            query_table_name = 'grid_land'
-            query_string = 'min(grid_land.west_east) AS minX, '\
-                           'max(grid_land.west_east) AS maxX, '\
-                           'min(grid_land.south_north) AS minY, '\
-                           'max(grid_land.south_north) AS maxY'
-
-            sql_grid_land = sql_template.format(query_table_name=query_table_name,
-                                                query_string=query_string,
-                                                geometry_field_name=geometry_field_name,
-                                                input_geom=input_geom)
-
-            cursor = conn.execute(sql_grid_land)
-            grid_indices = list(cursor.fetchone())
-            data['grid_land'] = {"minX": grid_indices[0], "maxX": grid_indices[1],
-                                 "minY": grid_indices[2], "maxY": grid_indices[3]}
         if query_stream:
             query_table_name = 'stream'
             query_string = 'station_id'
@@ -261,14 +274,76 @@ def _perform_spatial_query(db_file=None,
 
             conn.close()
 
+        if query_terrain_grid:
+            data['grid_terrain'] = _query_grid_indices(wkt_str=query_window_wkt,
+                                                       wkt_epsg=input_epsg,
+                                                       tif_file_path=tif_file_terrain,
+                                                       tif_epsg=db_epsg)
+
+        if query_land_grid:
+            data['grid_land'] = _query_grid_indices(wkt_str=query_window_wkt,
+                                                    wkt_epsg=input_epsg,
+                                                    tif_file_path=tif_file_land,
+                                                    tif_epsg=db_epsg)
         return data
 
     except Exception as ex:
         data["status"] = "error"
-        raise ex
+        logger.exception(ex.message)
     finally:
         if conn is not None:
             conn.close()
+
+
+def _query_grid_indices(wkt_str=None,
+                        wkt_epsg=None,
+                        tif_file_path=None,
+                        tif_epsg=4269
+                        ):
+
+    geom_obj = ogr.CreateGeometryFromWkt(wkt_str)
+
+    source = osr.SpatialReference()
+    source.ImportFromEPSG(wkt_epsg)
+
+    ds_tiff = gdal.Open(tif_file_path)
+    prj_tiff = ds_tiff.GetProjection()
+    target = osr.SpatialReference(wkt=prj_tiff)
+
+    # target = osr.SpatialReference()
+    # target.ImportFromEPSG(tif_epsg)
+    #prj4_str = "+proj=lcc +a=6370000.0 +f=0.0 +pm=0.0  +x_0=0.0 +y_0=0.0 +lon_0=-97.0 +lat_1=30.0 +lat_2=60.0 +lat_0=40.0000076294 +units=m +axis=enu +no_defs"
+    #target.ImportFromProj4(prj4_str)
+    #target.ImportFromESRI('./subset_nwm_netcdf/tests/Sphere_Lambert_Conformal_Conic.prj')
+    transform = osr.CoordinateTransformation(source, target)
+    geom_obj.Transform(transform)
+
+    # ds = gdal.Warp("./{0}".format(os.path.basename(tif_file_path)),
+    #                tif_file_path,
+    #                format='GTiff',
+    #                cutlineDSName=geom_obj.ExportToJson(),
+    #                cropToCutline=True,
+    #                # transformerOptions=['DST_SRS=26912'],
+    #                dstNodata=65535,
+    #                warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+
+    # gdal.Warp() implemented in GDAL 2.1 and later
+    ds = gdal.Warp("",
+                   tif_file_path,
+                   format='MEM',
+                   cutlineDSName=geom_obj.ExportToJson(),
+                   cropToCutline=True,
+                   dstNodata=65535,
+                   warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+
+    x_band_stats = ds.GetRasterBand(1).GetStatistics(False, True)
+    x_min = int(x_band_stats[0])
+    x_max = int(x_band_stats[1])
+    y_band_stats = ds.GetRasterBand(2).GetStatistics(False, True)
+    y_min = int(y_band_stats[0])
+    y_max = int(y_band_stats[1])
+
+    return {"minX": x_min, "maxX": x_max, "minY": y_min, "maxY": y_max}
 
 
 def _get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, huc_id=None):
