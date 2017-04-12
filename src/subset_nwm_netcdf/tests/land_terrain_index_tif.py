@@ -2,12 +2,13 @@ import netCDF4
 import numpy
 
 
-# 1) Run this script to add cell indices (x_index, y_index) as two new variables in forcing/land and terrain files.
-# 2) ArcMap to convert the two variables x_index and y_index into two GeoTiff rasters.
-# 3) re-project raster into NAD1983 (epsg 4269)
-# 4) Export raster as Tiff file
-# 5) "Copy Raster" to change cell value type to 16bit-unsigned, set NoDataValue to 65535, LZZ compression
-# 5) Python-GDAL to cut those two raster using a polygon, and then calculate min and max values of resulting rasters.
+# 1) Run this script to add cell indices (x_index, y_index) to forcing/land and terrain files as two new variables.
+# 2) ArcMap Make NetCDF Layer to convert the two variables (x_index and y_index) into GeoTiff rasters.
+# 3) ArcMap Composite Raster Band to merge x_index raster and y_index raster into one 2-band raster
+# 4) ArcMap Re-project raster into NAD1983 (epsg 4269)
+# 5) Export raster as Tiff file
+# 6) "Copy Raster" to change cell value type to 16bit-unsigned, set NoDataValue to 65535, use LZZ compression
+# 7) Python-GDAL to cut those two raster using a polygon, and then calculate min and max values of resulting rasters.
 
 
 ## ncgen -7 -o nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.nc nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.cdl

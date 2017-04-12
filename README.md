@@ -11,7 +11,7 @@ More about NWM: http://water.noaa.gov/about/nwm
 "1.1.3", where "1.1" means NWM Ver1.1 and "3" is the version of this library.
 
 ## Workflow:
-user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cells (land and terrain) -->
+user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cells (forcing & land & terrain) -->
 Subset module --> Merge module --> regional NetCDF files
 
 *: Spatial Query is optional if user directly provides stream comids & reservoir comids & grid cells
