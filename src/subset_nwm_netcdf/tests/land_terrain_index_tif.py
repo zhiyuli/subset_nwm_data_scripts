@@ -11,18 +11,18 @@ import numpy
 # 7) Python-GDAL to cut those two raster using a polygon, and then calculate min and max values of resulting rasters.
 
 
-## ncgen -7 -o nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.nc nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.cdl
-in_nc_file = r"C:\nwm.t00z.analysis_assim.terrain_rt.tm00.conus.nc"
-out_nc_file = r"C:\nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.nc"
-x_len = 18432
-y_len = 15360
+# ## ncgen -7 -o nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.nc nwm.t00z.analysis_assim.terrain_rt.tm00.conus_index.cdl
+# in_nc_file = "../static/data/tests/nwm.t00z.analysis_assim.terrain_rt.tm00.conus.nc"
+# out_nc_file = "../static/data/tests/nwm.t00z.analysis_assim.terrain_rt.tm00.conus_xy.nc"
+# x_len = 18432
+# y_len = 15360
 
 
-### ncgen -7 -o nwm.t00z.analysis_assim.land.tm00.conus_index.nc nwm.t00z.analysis_assim.land.tm00.conus_index.cdl
-#in_nc_file = r"C:\nwm.t00z.analysis_assim.land.tm00.conus.nc"
-#out_nc_file = r"C:\nwm.t00z.analysis_assim.land.tm00.conus_index.nc"
-#x_len = 4608
-#y_len = 3840
+## ncgen -7 -o nwm.t00z.analysis_assim.land.tm00.conus_index.nc nwm.t00z.analysis_assim.land.tm00.conus_index.cdl
+in_nc_file = "../static/data/tests/nwm.t00z.analysis_assim.land.tm00.conus.nc"
+out_nc_file = "../static/data/tests/nwm.t00z.analysis_assim.land.tm00.conus_xy.nc"
+x_len = 4608
+y_len = 3840
 
 
 try:
@@ -31,12 +31,12 @@ try:
             for name, var_obj in out_nc.variables.iteritems():
                 if name in ['x', 'y']:
                     var_obj[:] = in_nc.variables[name][:]
-                elif name == "x_index":
-                    print "x_index"
-                    var_obj[:] = numpy.array([range(x_len) for i in range(y_len)])
-                elif name == "y_index":
-                    print "y_index"
-                    var_obj[:] = numpy.array([[i]*x_len for i in range(y_len)])
+                # elif name == "x_index":
+                #     print "x_index"
+                #     var_obj[:] = numpy.array([range(x_len) for i in range(y_len)])
+                # elif name == "y_index":
+                #     print "y_index"
+                #     var_obj[:] = numpy.array([[i]*x_len for i in range(y_len)])
     print "Done"
     pass
 except Exception as ex:
