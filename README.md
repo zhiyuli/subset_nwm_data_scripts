@@ -25,11 +25,12 @@ The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74
 
 ## What's new in 1.1.4 ?
 
- Use a new approach to spatial query grid cell indices against forcing, land and terrain files;
- Deprecate Tiff supporting files. Now the only necessary supporting file is the sqlite/spatialite geodatabase;
+ Use a new approach to perform spatial query on grid cell indices against forcing, land and terrain files;
+ Further improve spatial query speed on grid cells;
+ Further address partially covered grids caused by projection distortion;
+ Deprecate Tiff supporting files. Now the only necessary supporting file is the sqlite/spatialite geodatabase for stream, reservoir and HUCs;
  Remove GDAL; Add pyproj and numpy to dependency list;
- Further address partially covered 2D netcdf caused by projection distortion;
- Further improve spatial query speed on grid cells.
+
 
 ## Environment and Dependencies:
 Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.
