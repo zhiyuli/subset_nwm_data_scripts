@@ -38,32 +38,31 @@ if __name__ == "__main__":
         # Linux
         # db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
-        # Shapefile example: utah polygon
+        # Shapefile example: utah state polygon
         query_type = "shapefile"
         #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
         shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
-        in_epsg = None  # epsg is optional as lib will try to read epsg from prj file
+        in_epsg = None  # epsg is optional as lib will try reading epsg code from prj file.
+                        # the run will fail if the prj file contains a custom projection string that does not have a epsg code,
         huc_id = None
 
         # # geojson example
         # query_type = "geojson"
         # shp_path = None
         # geom_str = '{ "type": "Polygon", "coordinates": [ [ [ -111.0, 39.000000000002537 ], [ -111.0, 40.000000000003041 ], [ -110.0, 40.000000000003048 ], [ -110.0, 39.000000000002551 ], [ -111.0, 39.000000000002537 ] ] ] }'
-        # in_epsg = 4269  # epsg is required
+        # in_epsg = 4269  # NAD83; epsg is required
         # huc_id = None
 
         # # wkt example
         # query_type = "wkt"
         # shp_path = None
         # geom_str = "POLYGON((500000 4316776.583097936,500000 4427757.218624833,585360.4618433624 4428236.064519553,586592.6780279021 4317252.164517585,500000 4316776.583097936))"
-        # in_epsg = 26912  # epsg is required
+        # in_epsg = 26912  # NAD83 UTM zone 12; epsg is required
         # huc_id = None
 
         # # huc 12 example
-        # # Bear River-Frontal Great Salt Lake watershed
-        # # A copy of resulting files were previously stored at
-        # # https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
+        # # Bear River-Frontal Great Salt Lake watershed, UT
         # query_type = "huc_12"
         # shp_path = None
         # geom_str = None
@@ -71,6 +70,7 @@ if __name__ == "__main__":
         # huc_id = "160102040504"
 
         # # huc 10 example
+        # # Upper Medina River watershed, TX
         # query_type = "huc_10"
         # shp_path = None
         # geom_str = None
@@ -78,6 +78,7 @@ if __name__ == "__main__":
         # huc_id = "1210030202"
 
         # # huc 8 example
+        # # Southern Great Salt Lake Desert watershed, UT
         # query_type = "huc_8"
         # shp_path = None
         # geom_str = None

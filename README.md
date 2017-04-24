@@ -31,6 +31,20 @@ The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74
  Deprecate Tiff supporting files. Now the only necessary supporting file is the sqlite/spatialite geodatabase for stream, reservoir and HUCs;
  Remove GDAL; Add pyproj and numpy to dependency list;
 
+## What's new in 1.1.3 ?
+1) Support subsetting more files:
+
+1-1) "tm01" and "tm02" of each time stamp in analysis_assim model configuration
+
+1-2) the "terrain" files in all model configurations
+
+2) speed up spatial query on grid files (forcing, land and terrain) using GDAL and further reduce size of supporting files
+
+3) add GDAL as a new dependency
+
+## What's new in 1.1.2 and 1.1.1?
+
+First two releases
 
 ## Environment and Dependencies:
 Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.
