@@ -8,13 +8,13 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.3", where "1.1" means NWM Ver1.1 and "3" is the version of this library.
+"1.1.4", where "1.1" means NWM Ver1.1 and "4" is the version of this library.
 
 ## Workflow:
-user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cells (forcing & land & terrain) -->
+user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->
 Subset module --> Merge module --> regional NetCDF files
 
-*: Spatial Query is optional if user directly provides stream comids & reservoir comids & grid cells
+*: Spatial Query is optional if user directly provides stream comids & reservoir comids & grid cells indices
 
 ## Usage
 See demo.py in source
@@ -22,6 +22,14 @@ See demo.py in source
 The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 
 The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
+
+## What's new in 1.1.4 ?
+
+ Use a new approach to perform spatial query on grid cell indices against forcing, land and terrain files;
+ Further improve spatial query speed on grid cells;
+ Further address partially covered grids caused by projection distortion;
+ Deprecate Tiff supporting files. Now the only necessary supporting file is the sqlite/spatialite geodatabase for stream, reservoir and HUCs;
+ Remove GDAL; Add pyproj and numpy to dependency list;
 
 ## What's new in 1.1.3 ?
 1) Support subsetting more files:
@@ -34,32 +42,38 @@ The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74
 
 3) add GDAL as a new dependency
 
+## What's new in 1.1.2 and 1.1.1?
+
+First two releases
+
 ## Environment and Dependencies:
 Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 and Ubuntu 16.04 x64.
 
 ### Spatial Query module:
 
-1) fiona @ https://pypi.python.org/pypi/Fiona
+1) fiona >= 1.7.5 @ https://pypi.python.org/pypi/Fiona
 
-2) shapely @ https://pypi.python.org/pypi/Shapely/
+2) shapely >= 1.5.17 @ https://pypi.python.org/pypi/Shapely/
 
-3) pysqlite with mod_spatialite extension @ https://pypi.python.org/pypi/pysqlite/ and https://www.gaia-gis.it/fossil/libspatialite/wiki?name=mod_spatialite
+3) pysqlite >= 2.8.3 with mod_spatialite extension @ https://pypi.python.org/pypi/pysqlite/ and https://www.gaia-gis.it/fossil/libspatialite/wiki?name=mod_spatialite
 
-4) GDAL 2.1 or later @ https://pypi.python.org/pypi/GDAL
+4) numpy >= 1.12.1 @ https://pypi.python.org/pypi/numpy
 
-5) spatial query supporting files @ https://www.hydroshare.org/resource/e8434e287ada4540be814fa7275fb749/
+5) pyproj >= 1.9.5.1 @ https://pypi.python.org/pypi/pyproj
+
+6) spatial query supporting files (1.1.4) @ https://www.hydroshare.org/resource/23c05d3177654a9ab9dc9023d00d16ed/
 
 ### Subset & Merge module
 
-1) NetCDF utilities (shell commands) @ https://www.unidata.ucar.edu/downloads/netcdf/index.jsp
+1) NetCDF utilities >= 4.4 (shell commands) @ https://www.unidata.ucar.edu/downloads/netcdf/index.jsp
 
-2) NCO (shell commands) @ http://nco.sourceforge.net/
+2) NCO >= 4.6.3 (shell commands) @ http://nco.sourceforge.net/
 
-3) numpy @ https://pypi.python.org/pypi/numpy
+3) numpy >= 1.12.1 @ https://pypi.python.org/pypi/numpy
 
-4) netCDF4 python lib @ https://pypi.python.org/pypi/netCDF4
+4) netCDF4 >= 1.2.7 python wrapper for NetCDF4 @ https://pypi.python.org/pypi/netCDF4
 
-5) sed (shell command)
+5) sed (shell command): Linux systems include this command by default. This lib contains a GNU sed binary for Windows
 
 Implementation inspired by:
 

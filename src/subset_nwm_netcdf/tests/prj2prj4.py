@@ -10,7 +10,7 @@
 # print srs.ExportToProj4()
 
 import pycrs
-fromcrs = pycrs.loader.from_file("./Sphere_Lambert_Conformal_Conic.prj")
+fromcrs = pycrs.loader.from_file("../static/data/tests/Sphere_Lambert_Conformal_Conic.prj")
 print "esri_wkt"
 print fromcrs.to_esri_wkt()
 print "ogc_wkt"

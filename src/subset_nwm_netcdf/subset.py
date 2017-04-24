@@ -40,7 +40,7 @@ def start_subset_nwm_netcdf_job(job_id=None,
     :param file_type_list:  required, ["forecast", 'forcing']
     :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
                             "long_range": long_range_mem1-4,
-                            "long_range_mem4": indicate a specific long_range_mem model
+                            "long_range_mem4": indicate a specific long_range_mem4 model
     :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
     :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
     :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}

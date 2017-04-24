@@ -3,22 +3,27 @@ import json
 import exceptions
 import logging
 import datetime
+import copy
+from functools import partial
 
+import netCDF4
+import numpy
 import fiona
 import shapely.wkt
 import shapely.geometry
+import shapely.ops
+import pyproj
 # import pyspatialite.dbapi2 as db
 import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
-from osgeo import gdal, ogr, osr
 
 logger = logging.getLogger('subset_nwm_netcdf')
+
+default_xy_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates/v1.1/xy_nc/")
 
 
 def query_comids_and_grid_indices(job_id=None,
                                   db_file_path=None,
                                   db_epsg_code=4269,
-                                  tif_file_land=None,
-                                  tif_file_terrain=None,
                                   query_type="shapefile",
                                   shp_path=None,
                                   geom_str=None,
@@ -52,8 +57,6 @@ def query_comids_and_grid_indices(job_id=None,
 
     logger.info("db_file_path: {0}".format(str(db_file_path)))
     logger.info("db_epsg_code: {0}".format(str(db_epsg_code)))
-    logger.info("tif_file_land: {0}".format(str(tif_file_land)))
-    logger.info("tif_file_terrain: {0}".format(str(tif_file_terrain)))
     logger.info("query_type: {0}".format(str(query_type)))
     logger.info("shp_path: {0}".format(str(shp_path)))
     logger.info("geom_str: {0}".format(str(geom_str)))
@@ -94,8 +97,6 @@ def query_comids_and_grid_indices(job_id=None,
 
         polygon_query_window = shapely.geometry.Polygon(polygon_exterior_linearring)
         data = _perform_spatial_query(db_file=db_file_path,
-                                      tif_file_terrain=tif_file_terrain,
-                                      tif_file_land=tif_file_land,
                                       db_epsg=db_epsg_code,
                                       query_window_wkt=polygon_query_window.wkt,
                                       input_epsg=in_epsg_checked,
@@ -213,8 +214,6 @@ def _check_supported_epsg(epsg=None, db_file=None):
 
 
 def _perform_spatial_query(db_file=None,
-                           tif_file_land=None,
-                           tif_file_terrain=None,
                            db_epsg=None,
                            query_window_wkt=None,
                            input_epsg=None,
@@ -275,16 +274,17 @@ def _perform_spatial_query(db_file=None,
             conn.close()
 
         if query_terrain_grid:
-            data['grid_terrain'] = _query_grid_indices(wkt_str=query_window_wkt,
-                                                       wkt_epsg=input_epsg,
-                                                       tif_file_path=tif_file_terrain,
-                                                       tif_epsg=db_epsg)
-
+            xy_netcdf_path = os.path.join(default_xy_templates_path, "xy_terrain.nc")
+            data['grid_terrain'] = _query_grid_indices_xy_nc(wkt_str=query_window_wkt,
+                                                             wkt_epsg=input_epsg,
+                                                             xy_netcdf_path=xy_netcdf_path
+                                                             )
         if query_land_grid:
-            data['grid_land'] = _query_grid_indices(wkt_str=query_window_wkt,
-                                                    wkt_epsg=input_epsg,
-                                                    tif_file_path=tif_file_land,
-                                                    tif_epsg=db_epsg)
+            xy_netcdf_path = os.path.join(default_xy_templates_path, "xy_land.nc")
+            data['grid_land'] = _query_grid_indices_xy_nc(wkt_str=query_window_wkt,
+                                                          wkt_epsg=input_epsg,
+                                                          xy_netcdf_path=xy_netcdf_path
+                                                          )
         return data
 
     except Exception as ex:
@@ -295,55 +295,163 @@ def _perform_spatial_query(db_file=None,
             conn.close()
 
 
-def _query_grid_indices(wkt_str=None,
-                        wkt_epsg=None,
-                        tif_file_path=None,
-                        tif_epsg=4269
-                        ):
+def _query_grid_indices_xy_nc(wkt_str=None,
+                              wkt_epsg=None,
+                              xy_netcdf_path=None,
+                              ):
 
-    geom_obj = ogr.CreateGeometryFromWkt(wkt_str)
+    # 1) re-project query geometry into the proj same as forcing, land and terrain files
+    # 2) get the bounding box
+    # 3) get indices for bounding box corner points (inspired by: http://kbkb-wx-python.blogspot.com/2016/08/find-nearest-latitude-and-longitude.html)
 
-    source = osr.SpatialReference()
-    source.ImportFromEPSG(wkt_epsg)
+    shape_obj = shapely.wkt.loads(wkt_str)
+    in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=wkt_epsg))
 
-    ds_tiff = gdal.Open(tif_file_path)
-    prj_tiff = ds_tiff.GetProjection()
-    target = osr.SpatialReference(wkt=prj_tiff)
+    forcing_proj4 = '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=40 +lon_0=-97 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs'
+    forcing_pyproj_obj = pyproj.Proj(forcing_proj4)
 
-    # target = osr.SpatialReference()
-    # target.ImportFromEPSG(tif_epsg)
-    #prj4_str = "+proj=lcc +a=6370000.0 +f=0.0 +pm=0.0  +x_0=0.0 +y_0=0.0 +lon_0=-97.0 +lat_1=30.0 +lat_2=60.0 +lat_0=40.0000076294 +units=m +axis=enu +no_defs"
-    #target.ImportFromProj4(prj4_str)
-    #target.ImportFromESRI('./subset_nwm_netcdf/tests/Sphere_Lambert_Conformal_Conic.prj')
-    transform = osr.CoordinateTransformation(source, target)
-    geom_obj.Transform(transform)
+    shape_obj_reprojected = _project_shapely_geom(in_geom_obj=shape_obj,
+                                                  in_proj_type="pyproj",
+                                                  in_proj_value=in_pyproj_obj,
+                                                  out_proj_type="pyproj",
+                                                  out_proj_value=forcing_pyproj_obj)
 
-    # ds = gdal.Warp("./{0}".format(os.path.basename(tif_file_path)),
-    #                tif_file_path,
-    #                format='GTiff',
-    #                cutlineDSName=geom_obj.ExportToJson(),
-    #                cropToCutline=True,
-    #                # transformerOptions=['DST_SRS=26912'],
-    #                dstNodata=65535,
-    #                warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+    minX = shape_obj_reprojected.bounds[0]
+    maxX = shape_obj_reprojected.bounds[2]
+    minY = shape_obj_reprojected.bounds[1]
+    maxY = shape_obj_reprojected.bounds[3]
 
-    # gdal.Warp() implemented in GDAL 2.1 and later
-    ds = gdal.Warp("",
-                   tif_file_path,
-                   format='MEM',
-                   cutlineDSName=geom_obj.ExportToJson(),
-                   cropToCutline=True,
-                   dstNodata=65535,
-                   warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+    offset_idx_dict, _, _ = \
+        _find_closest_value_from_1d_netcdf(netcdf_path=xy_netcdf_path,
+                                           search_value_dict={"x": [minX, maxX],
+                                                              "y": [minY, maxY]}
+                                           )
+    return {"minX": offset_idx_dict['x'][0],
+            "maxX": offset_idx_dict['x'][1],
+            "minY": offset_idx_dict['y'][0],
+            "maxY": offset_idx_dict['y'][1]}
 
-    x_band_stats = ds.GetRasterBand(1).GetStatistics(False, True)
-    x_min = int(x_band_stats[0])
-    x_max = int(x_band_stats[1])
-    y_band_stats = ds.GetRasterBand(2).GetStatistics(False, True)
-    y_min = int(y_band_stats[0])
-    y_max = int(y_band_stats[1])
 
-    return {"minX": x_min, "maxX": x_max, "minY": y_min, "maxY": y_max}
+def _find_closest_value_from_1d_netcdf(netcdf_path=None, search_value_dict=None, idx_offset=0):
+
+    # open a netcdf file
+    # find the closest values for a list of user-provided values of specific variable names defined in search_value_dict
+    # add idx_offset to the Min and Max indices
+
+    closest_idx_dict = copy.deepcopy(search_value_dict)
+    closest_value_dict = copy.deepcopy(search_value_dict)
+    offset_value_dict = copy.deepcopy(search_value_dict)
+
+    var_length_dict = {}
+
+    with netCDF4.Dataset(netcdf_path, mode='r') as in_nc:
+        for var_name, search_value_list in search_value_dict.iteritems():
+            var_length_dict[var_name] = len(in_nc.variables[var_name][:])
+            var_value_array = in_nc.variables[var_name][:]
+            for i in range(len(search_value_list)):
+                search_value = search_value_list[i]
+                diff_array = numpy.abs(search_value - var_value_array)
+                closest_idx = numpy.argmin(diff_array)
+                closest_idx_dict[var_name][i] = closest_idx
+
+                closest_value = var_value_array[closest_idx]
+                closest_value_dict[var_name][i] = closest_value
+
+    # add offset to idx
+    for var_name, idx_list in closest_idx_dict.iteritems():
+        idx_min = min(idx_list)
+        idx_max = max(idx_list)
+        if idx_min > 0:
+            idx_min = idx_min - idx_offset
+        if idx_max < var_length_dict[var_name]:
+            idx_max = idx_max + idx_offset
+        offset_value_dict[var_name] = [idx_min, idx_max]
+
+    return offset_value_dict, closest_idx_dict, closest_value_dict
+
+
+def _project_shapely_geom(in_geom_obj=None,
+                          in_proj_type=None,
+                          in_proj_value=None,
+                          out_proj_type=None,
+                          out_proj_value=None):
+
+    # re-project a shapely geometry object
+    # the in and out projection can be defined by epsg code, proj4 string or pyproj projection obj
+
+    if in_proj_type.lower() == "epsg":
+        in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=in_proj_value))
+    elif in_proj_type.lower() == "proj4":
+         in_pyproj_obj = pyproj.Proj(in_proj_value)
+    elif in_proj_type.lower() == "pyproj":
+         in_pyproj_obj = in_proj_value
+
+    if out_proj_type.lower() == "epsg":
+        out_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=out_proj_value))
+    elif out_proj_type.lower() == "proj4":
+        out_pyproj_obj = pyproj.Proj(out_proj_value)
+    elif out_proj_type.lower() == "pyproj":
+         out_pyproj_obj = out_proj_value
+
+    project = partial(
+        pyproj.transform,
+        in_pyproj_obj,
+        out_pyproj_obj)
+    out_geom_obj = shapely.ops.transform(project, in_geom_obj)
+
+    return out_geom_obj
+
+# # Deprecated
+# def _query_grid_indices_tif(wkt_str=None,
+#                         wkt_epsg=None,
+#                         tif_file_path=None,
+#                         tif_epsg=4269
+#                         ):
+#     from osgeo import gdal, ogr, osr
+#
+#     geom_obj = ogr.CreateGeometryFromWkt(wkt_str)
+#
+#     source = osr.SpatialReference()
+#     source.ImportFromEPSG(wkt_epsg)
+#
+#     ds_tiff = gdal.Open(tif_file_path)
+#     prj_tiff = ds_tiff.GetProjection()
+#     target = osr.SpatialReference(wkt=prj_tiff)
+#
+#     # target = osr.SpatialReference()
+#     # target.ImportFromEPSG(tif_epsg)
+#     #prj4_str = "+proj=lcc +a=6370000.0 +f=0.0 +pm=0.0  +x_0=0.0 +y_0=0.0 +lon_0=-97.0 +lat_1=30.0 +lat_2=60.0 +lat_0=40.0000076294 +units=m +axis=enu +no_defs"
+#     #target.ImportFromProj4(prj4_str)
+#     #target.ImportFromESRI('./subset_nwm_netcdf/tests/Sphere_Lambert_Conformal_Conic.prj')
+#     transform = osr.CoordinateTransformation(source, target)
+#     geom_obj.Transform(transform)
+#
+#     # ds = gdal.Warp("./{0}".format(os.path.basename(tif_file_path)),
+#     #                tif_file_path,
+#     #                format='GTiff',
+#     #                cutlineDSName=geom_obj.ExportToJson(),
+#     #                cropToCutline=True,
+#     #                # transformerOptions=['DST_SRS=26912'],
+#     #                dstNodata=65535,
+#     #                warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+#
+#     # gdal.Warp() implemented in GDAL 2.1 and later
+#     ds = gdal.Warp("",
+#                    tif_file_path,
+#                    format='MEM',
+#                    cutlineDSName=geom_obj.ExportToJson(),
+#                    cropToCutline=True,
+#                    dstNodata=65535,
+#                    warpOptions=['CUTLINE_ALL_TOUCHED=TRUE'])
+#
+#     x_band_stats = ds.GetRasterBand(1).GetStatistics(False, True)
+#     x_min = int(x_band_stats[0])
+#     x_max = int(x_band_stats[1])
+#     y_band_stats = ds.GetRasterBand(2).GetStatistics(False, True)
+#     y_min = int(y_band_stats[0])
+#     y_max = int(y_band_stats[1])
+#
+#     return {"minX": x_min, "maxX": x_max, "minY": y_min, "maxY": y_max}
 
 
 def _get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, huc_id=None):

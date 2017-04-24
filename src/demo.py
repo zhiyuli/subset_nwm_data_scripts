@@ -31,43 +31,38 @@ if __name__ == "__main__":
     logger.info("-------------Process Started-------------------")
     logger.info(all_start_dt)
     try:
-        # Path to geodatabase file (download from https://www.hydroshare.org/resource/95410260015a4fd1858a3ad3c4aa7f17/)
+        # Path to geodatabase file (download from https://www.hydroshare.org/resource/23c05d3177654a9ab9dc9023d00d16ed/)
         # Windows
-        # db_file_path = "F:/NWM/DB/nwm.sqlite"
-        # tif_file_terrain = "F:/NWM/DB/xy_terrain_NAD1983.tif"
-        # tif_file_land = "F:/NWM/DB/xy_land_NAD1983.tif"
+        db_file_path = "F:/NWM/DB/nwm.sqlite"
 
         # Linux
-        db_file_path = "/home/drew/Desktop/nwm.sqlite"
-        tif_file_terrain = "/home/drew/Desktop/xy_terrain_NAD1983.tif"
-        tif_file_land = "/home/drew/Desktop/xy_land_NAD1983.tif"
+        # db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
-        # Shapefile example: utah polygon
+        # Shapefile example: utah state polygon
         query_type = "shapefile"
         #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
         shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
-        in_epsg = None  # epsg is optional as lib will try to read epsg from prj file
+        in_epsg = None  # epsg is optional as lib will try reading epsg code from prj file.
+                        # the run will fail if the prj file contains a custom projection string that does not have a epsg code,
         huc_id = None
 
         # # geojson example
         # query_type = "geojson"
         # shp_path = None
         # geom_str = '{ "type": "Polygon", "coordinates": [ [ [ -111.0, 39.000000000002537 ], [ -111.0, 40.000000000003041 ], [ -110.0, 40.000000000003048 ], [ -110.0, 39.000000000002551 ], [ -111.0, 39.000000000002537 ] ] ] }'
-        # in_epsg = 4269  # epsg is required
+        # in_epsg = 4269  # NAD83; epsg is required
         # huc_id = None
 
         # # wkt example
         # query_type = "wkt"
         # shp_path = None
         # geom_str = "POLYGON((500000 4316776.583097936,500000 4427757.218624833,585360.4618433624 4428236.064519553,586592.6780279021 4317252.164517585,500000 4316776.583097936))"
-        # in_epsg = 26912  # epsg is required
+        # in_epsg = 26912  # NAD83 UTM zone 12; epsg is required
         # huc_id = None
 
         # # huc 12 example
-        # # Bear River-Frontal Great Salt Lake watershed
-        # # A copy of resulting files were previously stored at
-        # # https://www.hydroshare.org/resource/734533a9e08c494aa28d2d0e688e2c06/
+        # # Bear River-Frontal Great Salt Lake watershed, UT
         # query_type = "huc_12"
         # shp_path = None
         # geom_str = None
@@ -75,6 +70,7 @@ if __name__ == "__main__":
         # huc_id = "160102040504"
 
         # # huc 10 example
+        # # Upper Medina River watershed, TX
         # query_type = "huc_10"
         # shp_path = None
         # geom_str = None
@@ -82,6 +78,7 @@ if __name__ == "__main__":
         # huc_id = "1210030202"
 
         # # huc 8 example
+        # # Southern Great Salt Lake Desert watershed, UT
         # query_type = "huc_8"
         # shp_path = None
         # geom_str = None
@@ -90,8 +87,6 @@ if __name__ == "__main__":
 
         query_result_dict = query_comids_and_grid_indices(job_id=job_id,
                                                           db_file_path=db_file_path,
-                                                          tif_file_terrain=tif_file_terrain,
-                                                          tif_file_land=tif_file_land,
                                                           query_type=query_type,
                                                           shp_path=shp_path,
                                                           geom_str=geom_str,
@@ -102,9 +97,9 @@ if __name__ == "__main__":
 
         # Path to the root folder contains original NWM NetCDF files
         # Windows
-        #netcdf_folder_path = "G:\\nwm_new_data"
+        netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
-        netcdf_folder_path = "/media/sf_nwm_new_data"
+        #netcdf_folder_path = "/media/sf_nwm_new_data"
 
         # Path of output folder
         output_folder_path = "./temp"
@@ -114,7 +109,7 @@ if __name__ == "__main__":
         cleanup = True
 
         # list of simulation dates
-        simulation_date_list = ["20170404"]
+        simulation_date_list = ["20170419"]
 
         # list of model file types
         file_type_list = ["forecast", 'forcing']
