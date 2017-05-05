@@ -1,8 +1,8 @@
 netcdf {%filename%} {
 dimensions:
 	time = UNLIMITED ; // (1 currently)
-	x = 4608 ;
-	y = 3840 ;
+	x = {%x%} ;
+	y = {%y%} ;
 	soil_layers_stag = 4 ;
 	snow_layers = 3 ;
 	reference_time = 1 ;

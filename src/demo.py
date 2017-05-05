@@ -33,15 +33,15 @@ if __name__ == "__main__":
     try:
         # Path to geodatabase file (download from https://www.hydroshare.org/resource/23c05d3177654a9ab9dc9023d00d16ed/)
         # Windows
-        db_file_path = "F:/NWM/DB/nwm.sqlite"
+        #db_file_path = "F:/NWM/DB/nwm.sqlite"
 
         # Linux
-        # db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
         # Shapefile example: utah state polygon
         query_type = "shapefile"
-        #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
-        shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
+        shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        #shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
         in_epsg = None  # epsg is optional as lib will try reading epsg code from prj file.
                         # the run will fail if the prj file contains a custom projection string that does not have a epsg code,
@@ -97,14 +97,14 @@ if __name__ == "__main__":
 
         # Path to the root folder contains original NWM NetCDF files
         # Windows
-        netcdf_folder_path = "G:\\nwm_new_data"
+        #netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
-        #netcdf_folder_path = "/media/sf_nwm_new_data"
+        netcdf_folder_path = "/media/sf_nwm_new_data"
 
         # Path of output folder
         output_folder_path = "./temp"
         # merge resulting netcdfs
-        merge_netcdfs = True
+        merge_netcdfs = False
         # remove intermediate files
         cleanup = True
 
@@ -117,11 +117,11 @@ if __name__ == "__main__":
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['short_range']
+        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
 
         # list of model result data types
         data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        #data_type_list = ['land', 'terrain']
+        #data_type_list = ['channel']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
@@ -151,6 +151,7 @@ if __name__ == "__main__":
                                     grid_terrain_dict=grid_terrain_dict,
                                     stream_comid_list=stream_comid_list,
                                     reservoir_comid_list=reservoir_comid_list,
+                                    resize_dimension=False,
                                     cleanup=cleanup)
 
         if merge_netcdfs:

@@ -1,6 +1,6 @@
 netcdf {%filename%} {
 dimensions:
-	feature_id = {%feature_id%} ;
+	feature_id = 2716897 ;
 	time = UNLIMITED ; // (1 currently)
 	reference_time = 1 ;
 variables:

@@ -1,6 +1,6 @@
 # Subset National Water Model (NWM) NetCDF
 
-Note that the deployment schedule of new National Water Model (NWM) Ver1.1 got delayed until May 4th 2017 according to its official notice: http://www.nws.noaa.gov/os/notification/scn17-41natl_water_model.htm
+Note that the deployment schedule of new National Water Model (NWM) Ver1.1 got delayed until UTC time 1200AM May 8th 2017 according to its official notice: http://www.nws.noaa.gov/os/notification/scn17-41natl_water_modelaaa.htm
 
 NWM's daily output is about 400GB worth of NetCDF files that contain meteorological and hydrologic data/forecasts covers the whole U.S.
 This python library enables users to subset NWM Ver1.1 NetCDF using a polygon that represents a region of interest, which can significantly reduce data storage size and speed up regional data access.
@@ -8,7 +8,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.4", where "1.1" means NWM Ver1.1 and "4" is the version of this library.
+"1.1.5", where "1.1" means NWM Ver1.1 and "5" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->
@@ -22,6 +22,9 @@ See demo.py in source
 The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 
 The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
+
+## What's new in 1.1.5 ?
+
 
 ## What's new in 1.1.4 ?
 

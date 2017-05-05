@@ -1,8 +1,8 @@
 netcdf {%filename%} {
 dimensions:
 	time = UNLIMITED ; // (1 currently)
-	y = {%y%} ;
-	x = {%x%} ;
+	y = 3840 ;
+	x = 4608 ;
 	reference_time = 1 ;
 	nv = 2 ;
 variables:

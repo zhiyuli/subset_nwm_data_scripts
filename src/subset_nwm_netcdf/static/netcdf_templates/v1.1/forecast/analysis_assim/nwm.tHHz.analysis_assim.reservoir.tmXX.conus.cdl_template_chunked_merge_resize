@@ -1,10 +1,10 @@
 netcdf {%filename%} {
 dimensions:
-	feature_id = 1260 ;
+	feature_id = {%feature_id%} ;
 	time = UNLIMITED ; // (1 currently)
 	reference_time = 1 ;
 variables:
-	int time(time) ;
+    int time(time) ;
 		time:long_name = "valid output time" ;
 		time:standard_name = "time" ;
 		time:mising_value = -8.9999998e+15 ;
