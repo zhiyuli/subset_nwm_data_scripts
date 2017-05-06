@@ -103,6 +103,9 @@ if __name__ == "__main__":
 
         # Path of output folder
         output_folder_path = "./temp"
+
+        # shrink dimension size to only cover subsetting area
+        resize_dimension = True
         # merge resulting netcdfs
         merge_netcdfs = False
         # remove intermediate files
@@ -117,7 +120,7 @@ if __name__ == "__main__":
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_configuration_list = ['analysis_assim']
 
         # list of model result data types
         data_type_list = ['reservoir', 'channel', 'land', 'terrain']
@@ -151,7 +154,7 @@ if __name__ == "__main__":
                                     grid_terrain_dict=grid_terrain_dict,
                                     stream_comid_list=stream_comid_list,
                                     reservoir_comid_list=reservoir_comid_list,
-                                    resize_dimension=False,
+                                    resize_dimension=resize_dimension,
                                     cleanup=cleanup)
 
         if merge_netcdfs:

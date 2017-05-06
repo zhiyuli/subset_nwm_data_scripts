@@ -1,7 +1,7 @@
 import netCDF4
 import numpy
 import datetime
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 def _get_comid_indices(find_comids, all_comids):
 

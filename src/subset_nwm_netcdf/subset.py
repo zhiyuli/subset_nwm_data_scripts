@@ -506,7 +506,7 @@ def _subset_grid_file(in_nc_file=None,
                         else:
                             if len(var_obj.dimensions) > 0:
                                 var_obj[:] = in_nc.variables[name][:]
-                    else:
+                    else:  # keep original dimension size
                         if name in ['x', 'y']:
                             var_x_or_y = var_obj
                             var_x_or_y[:] = \
@@ -614,7 +614,7 @@ def _subset_comid_file(in_nc_file=None,
                     for name, var_obj in out_nc.variables.iteritems():
                         if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
                             if name == "feature_id":
-                                var_obj = comid_list_np
+                                var_obj[:] = comid_list_np
                             else:
                                 # test which reading mode is faster, direct or indirect
                                 direct_read = _test_read_indirect_direct(direct_read=direct_read,
@@ -655,7 +655,7 @@ def _subset_comid_file(in_nc_file=None,
                         else:
                             # v1.1, merge: time; v1.1: reference_time
                             var_obj[:] = in_nc.variables[name][:]
-                else:
+                else:  # keep original dimension size
                     for name, var_obj in out_nc.variables.iteritems():
                         if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
                             if name == "feature_id":
