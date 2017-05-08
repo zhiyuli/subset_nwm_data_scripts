@@ -28,7 +28,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                 grid_terrain_dict=None,
                                 stream_comid_list=None,
                                 reservoir_comid_list=None,
-                                resize_dimension=True,
+                                resize_dimension_grid=True,
+                                resize_dimension_feature=True,
                                 cleanup=True,
                                 template_version="v1.1",
                                 write_file_list=None):
@@ -137,7 +138,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                            template_folder_path=template_folder_path,
                                            template_version=template_version,
                                            write_file_list=write_file_list,
-                                           resize_dimension=resize_dimension,
+                                           resize_dimension_grid=resize_dimension_grid,
+                                           resize_dimension_feature=resize_dimension_feature,
                                            cleanup=cleanup)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
@@ -223,7 +225,8 @@ def _subset_nwm_netcdf(job_id=None,
                        template_version="v1.1",
                        write_file_list=None,
                        cleanup=True,
-                       resize_dimension=True):
+                       resize_dimension_grid=True,
+                       resize_dimension_feature=True):
 
     file_type = file_type.lower()
     model_cfg = model_cfg.lower() if model_cfg else None
@@ -314,7 +317,9 @@ def _subset_nwm_netcdf(job_id=None,
     else:
         raise Exception("invalid file_type: {0}".format(file_type))
 
-    if resize_dimension:
+    if (resize_dimension_feature and data_type in ["channel", "reservoir"] and file_type=="forecast") or \
+        (resize_dimension_grid and data_type in ["land", "terrain"] and file_type=="forecast") or \
+         (resize_dimension_grid and file_type == "forcing"):
         cdl_template_filename += "_chunked_merge_resize"
     else:
         cdl_template_filename += "_chunked_merge"
@@ -438,7 +443,7 @@ def _subset_nwm_netcdf(job_id=None,
             _subset_grid_file(in_nc_file=in_nc_file,
                               out_nc_file=out_nc_file,
                               grid_dict=grid_dict,
-                              resize_dimension=resize_dimension)
+                              resize_dimension=resize_dimension_grid)
 
         elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
 
@@ -449,7 +454,7 @@ def _subset_nwm_netcdf(job_id=None,
                                    index_list=index_list_dict[data_type],
                                    reuse_comid_and_index=True,
                                    direct_read=direct_read,
-                                   resize_dimension=resize_dimension)
+                                   resize_dimension=resize_dimension_feature)
     if cleanup:
         # remove nc_template folder
         if os.path.exists(out_nc_folder_template_path):

@@ -105,7 +105,8 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
 
         # shrink dimension size to only cover subsetting area
-        resize_dimension = True
+        resize_dimension_grid = False
+        resize_dimension_feature = True
         # merge resulting netcdfs
         merge_netcdfs = False
         # remove intermediate files
@@ -154,7 +155,8 @@ if __name__ == "__main__":
                                     grid_terrain_dict=grid_terrain_dict,
                                     stream_comid_list=stream_comid_list,
                                     reservoir_comid_list=reservoir_comid_list,
-                                    resize_dimension=resize_dimension,
+                                    resize_dimension_grid=resize_dimension_grid,
+                                    resize_dimension_feature=resize_dimension_feature,
                                     cleanup=cleanup)
 
         if merge_netcdfs:
