@@ -83,9 +83,8 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                         HH_merged_list = HH_re_list
                         XXX_re_list = ["\d\d\d"]
                         XXX_merged_list = ["ALL"]
-                    log_str = "Merging {file_type}-{model_cfg}-{data_type}".format(file_type=file_type,
-                                                                                   model_cfg=model_cfg,
-                                                                                   data_type=data_type)
+                    log_str = "Merging {file_type}-{model_cfg}".format(file_type=file_type,
+                                                                       model_cfg=model_cfg)
                     logger.info(log_str)
                     merge_start_dt = datetime.datetime.now()
                     _perform_merge(HH_re_list=HH_re_list,

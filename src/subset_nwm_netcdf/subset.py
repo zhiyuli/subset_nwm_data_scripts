@@ -28,6 +28,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                 grid_terrain_dict=None,
                                 stream_comid_list=None,
                                 reservoir_comid_list=None,
+                                resize_dimension_grid=True,
+                                resize_dimension_feature=True,
                                 cleanup=True,
                                 template_version="v1.1",
                                 write_file_list=None):
@@ -47,6 +49,7 @@ def start_subset_nwm_netcdf_job(job_id=None,
     :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
     :param stream_comid_list: required, [comid1, comid2, ...]
     :param reservoir_comid_list: required, [comid1, comid2, ....]
+    :param resize_dimension: shrink original dimension sizes in resulting files, default: False
     :param cleanup: remove intermediate files and only keep merged netcdfs
     :param write_file_list: internal testing purpose, ignore this parameter
     :param template_version: "v1.1"
@@ -135,6 +138,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                            template_folder_path=template_folder_path,
                                            template_version=template_version,
                                            write_file_list=write_file_list,
+                                           resize_dimension_grid=resize_dimension_grid,
+                                           resize_dimension_feature=resize_dimension_feature,
                                            cleanup=cleanup)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
@@ -219,7 +224,9 @@ def _subset_nwm_netcdf(job_id=None,
                        template_folder_path=None,
                        template_version="v1.1",
                        write_file_list=None,
-                       cleanup=True):
+                       cleanup=True,
+                       resize_dimension_grid=True,
+                       resize_dimension_feature=True):
 
     file_type = file_type.lower()
     model_cfg = model_cfg.lower() if model_cfg else None
@@ -310,7 +317,12 @@ def _subset_nwm_netcdf(job_id=None,
     else:
         raise Exception("invalid file_type: {0}".format(file_type))
 
-    cdl_template_filename += "_chunked_merge"
+    if (resize_dimension_feature and data_type in ["channel", "reservoir"] and file_type=="forecast") or \
+        (resize_dimension_grid and data_type in ["land", "terrain"] and file_type=="forecast") or \
+         (resize_dimension_grid and file_type == "forcing"):
+        cdl_template_filename += "_chunked_merge_resize"
+    else:
+        cdl_template_filename += "_chunked_merge"
 
     if "long_range_mem" in model_cfg:
         # long_range uses same templates for all mem1-mem4
@@ -430,7 +442,8 @@ def _subset_nwm_netcdf(job_id=None,
            file_type == "forecast" and (data_type in ["land", "terrain"]):
             _subset_grid_file(in_nc_file=in_nc_file,
                               out_nc_file=out_nc_file,
-                              grid_dict=grid_dict)
+                              grid_dict=grid_dict,
+                              resize_dimension=resize_dimension_grid)
 
         elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
 
@@ -440,7 +453,8 @@ def _subset_nwm_netcdf(job_id=None,
                                    comid_list=comid_list_dict[data_type],
                                    index_list=index_list_dict[data_type],
                                    reuse_comid_and_index=True,
-                                   direct_read=direct_read)
+                                   direct_read=direct_read,
+                                   resize_dimension=resize_dimension_feature)
     if cleanup:
         # remove nc_template folder
         if os.path.exists(out_nc_folder_template_path):
@@ -450,6 +464,7 @@ def _subset_nwm_netcdf(job_id=None,
 def _subset_grid_file(in_nc_file=None,
                       out_nc_file=None,
                       grid_dict=None,
+                      resize_dimension=True,
                       template_version="v1.1",
                       netcdf_format="NETCDF4_CLASSIC"):
     try:
@@ -466,37 +481,72 @@ def _subset_grid_file(in_nc_file=None,
                 out_nc.model_output_valid_time = in_nc.model_output_valid_time
                 for name, var_obj in out_nc.variables.iteritems():
 
-                    if name in ['x', 'y']:
-                        var_x_or_y = var_obj
-                        var_x_or_y[:] = in_nc.variables[name][grid['min{0}'.format(name.upper())]:
-                                                              grid['max{0}'.format(name.upper())] + 1]
+                    if resize_dimension:
+                        if name in ['x', 'y']:
+                            var_x_or_y = var_obj
+                            var_x_or_y[:] = in_nc.variables[name][grid['min{0}'.format(name.upper())]:
+                                                                  grid['max{0}'.format(name.upper())] + 1]
+                        elif len(var_obj.dimensions) == 2:
+                            if var_obj.dimensions[0] != "time":
+                                raise Exception("unexpected variable")
+                            var_obj[0][:] = in_nc.variables[name][:]
+                        elif len(var_obj.dimensions) == 3:
 
-                    elif len(var_obj.dimensions) == 2:
-                        if var_obj.dimensions[0] != "time":
-                            raise Exception("unexpected variable")
-                        var_obj[0][:] = in_nc.variables[name][:]
+                            if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                               or var_obj.dimensions[2] != "x":
+                                raise Exception("unexpected Geo2D variable")
+                            var_obj[0] = in_nc.variables[name][0,
+                                                               grid['minY']:grid['maxY'] + 1,
+                                                               grid['minX']:grid['maxX'] + 1]
+                        elif len(var_obj.dimensions) == 4:
+                            # medium range land file variable may have 4 dimensions
 
-                    elif len(var_obj.dimensions) == 3:
+                            if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                               or var_obj.dimensions[3] != "x":
+                                raise Exception("unexpected medium range Geo2D variable")
+                            var_obj[0] = in_nc.variables[name][0,
+                                                               grid['minY']:grid['maxY'] + 1,
+                                                               :,
+                                                               grid['minX']:grid['maxX'] + 1]
+                        else:
+                            if len(var_obj.dimensions) > 0:
+                                var_obj[:] = in_nc.variables[name][:]
+                    else:  # keep original dimension size
+                        if name in ['x', 'y']:
+                            var_x_or_y = var_obj
+                            var_x_or_y[:] = \
+                                in_nc.variables[name][:]
+                        elif len(var_obj.dimensions) == 2:
+                            if var_obj.dimensions[0] != "time":
+                                raise Exception("unexpected variable")
+                            var_obj[0][:] = in_nc.variables[name][:]
+                        elif len(var_obj.dimensions) == 3:
 
-                        if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
-                           or var_obj.dimensions[2] != "x":
-                            raise Exception("unexpected Geo2D variable")
-                        var_obj[0] = in_nc.variables[name][0,
-                                                           grid['minY']:grid['maxY'] + 1,
-                                                           grid['minX']:grid['maxX'] + 1]
-                    elif len(var_obj.dimensions) == 4:
-                        # medium range land file variable may have 4 dimensions
+                            if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                                    or var_obj.dimensions[2] != "x":
+                                raise Exception("unexpected Geo2D variable")
+                            var_obj[0, grid['minY']:grid['maxY'] + 1, grid['minX']:grid['maxX'] + 1] \
+                                = in_nc.variables[name][0,
+                                  grid['minY']:grid['maxY'] + 1,
+                                  grid['minX']:grid['maxX'] + 1]
+                        elif len(var_obj.dimensions) == 4:
+                            # medium range land file variable may have 4 dimensions
 
-                        if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
-                           or var_obj.dimensions[3] != "x":
-                            raise Exception("unexpected medium range Geo2D variable")
-                        var_obj[0] = in_nc.variables[name][0,
-                                                           grid['minY']:grid['maxY'] + 1,
-                                                           :,
-                                                           grid['minX']:grid['maxX'] + 1]
-                    else:
-                        if len(var_obj.dimensions) > 0:
-                            var_obj[:] = in_nc.variables[name][:]
+                            if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
+                                    or var_obj.dimensions[3] != "x":
+                                raise Exception("unexpected medium range Geo2D variable")
+                            var_obj[0,
+                            grid['minY']:grid['maxY'] + 1,
+                            :,
+                            grid['minX']:grid['maxX'] + 1] \
+                                = in_nc.variables[name][0,
+                                  grid['minY']:grid['maxY'] + 1,
+                                  :,
+                                  grid['minX']:grid['maxX'] + 1]
+                        else:
+                            if len(var_obj.dimensions) > 0:
+                                var_obj[:] = in_nc.variables[name][:]
+
     except Exception as ex:
         logger.exception(ex.message + in_nc_file)
         if os.path.isfile(out_nc_file):
@@ -540,6 +590,7 @@ def _subset_comid_file(in_nc_file=None,
                        comid_list=None,
                        index_list=None,
                        reuse_comid_and_index=False,
+                       resize_dimension=True,
                        template_version="v1.1",
                        netcdf_format="NETCDF4_CLASSIC",
                        direct_read=None):
@@ -564,51 +615,97 @@ def _subset_comid_file(in_nc_file=None,
 
                 out_nc.model_initialization_time = in_nc.model_initialization_time
                 out_nc.model_output_valid_time = in_nc.model_output_valid_time
-                for name, var_obj in out_nc.variables.iteritems():
-                    if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
-                        if name == "feature_id":
-                            # v1.1, merge: feature_id, lon, lat, elevation
-                            var_obj = comid_list_np
-                        else:
-                            # test which reading mode is faster, direct or indirect
-                            direct_read = _test_read_indirect_direct(direct_read=direct_read,
-                                                                     in_nc=in_nc,
-                                                                     var_name=name,
-                                                                     index_list=index_list)
-
-                            if direct_read:
-                                # v1.1: hydrologic parameter; merge: lon lat
-                                # Do not access big data from netcdf lib using non-contiguous index list
-                                var_obj[:] = in_nc.variables[name][index_list]
+                if resize_dimension:
+                    for name, var_obj in out_nc.variables.iteritems():
+                        if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
+                            if name == "feature_id":
+                                var_obj[:] = comid_list_np
                             else:
-                                # Instead, read all data into memory then subset it using index list
-                                # See speed_test.py for details
-                                all_data_np = in_nc.variables[name][:]
-                                var_obj[:] = all_data_np[index_list]
+                                # test which reading mode is faster, direct or indirect
+                                direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                         in_nc=in_nc,
+                                                                         var_name=name,
+                                                                         index_list=index_list)
 
-                    elif len(var_obj.dimensions) == 2:
-                        if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
+                                if direct_read:
+                                    # v1.1: hydrologic parameter; merge: lon lat
+                                    # Do not access big data from netcdf lib using non-contiguous index list
+                                    var_obj[:] = in_nc.variables[name][index_list]
+                                else:
+                                    # Instead, read all data into memory then subset it using index list
+                                    # See speed_test.py for details
+                                    all_data_np = in_nc.variables[name][:]
+                                    var_obj[:] = all_data_np[index_list]
 
-                            # test which reading mode is faster, direct or indirect
-                            direct_read = _test_read_indirect_direct(direct_read=direct_read,
-                                                                     in_nc=in_nc,
-                                                                     var_name=name,
-                                                                     index_list=index_list)
-                            # merge: hydrologic parameter
-                            if direct_read:
-                                var_obj[0] = in_nc.variables[name][index_list]
+                        elif len(var_obj.dimensions) == 2:
+                            if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
+
+                                # test which reading mode is faster, direct or indirect
+                                direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                         in_nc=in_nc,
+                                                                         var_name=name,
+                                                                         index_list=index_list)
+                                # merge: hydrologic parameter
+                                if direct_read:
+                                    var_obj[0] = in_nc.variables[name][index_list]
+                                else:
+                                    all_data_np = in_nc.variables[name][:]
+                                    var_obj[0] = all_data_np[index_list]
+
+                            elif var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "reference_time":
+                                # merge: reference_time
+                                var_obj[0] = in_nc.variables[name][:]
                             else:
-                                all_data_np = in_nc.variables[name][:]
-                                var_obj[0] = all_data_np[index_list]
-
-                        elif var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "reference_time":
-                            # merge: reference_time
-                            var_obj[0] = in_nc.variables[name][:]
+                                raise Exception("invalid nc")
                         else:
-                            raise Exception("invalid nc")
-                    else:
-                        # v1.1, merge: time; v1.1: reference_time
-                        var_obj[:] = in_nc.variables[name][:]
+                            # v1.1, merge: time; v1.1: reference_time
+                            var_obj[:] = in_nc.variables[name][:]
+                else:  # keep original dimension size
+                    for name, var_obj in out_nc.variables.iteritems():
+                        if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
+                            if name == "feature_id":
+                                var_obj[:] = in_nc.variables[name][:]
+                            else:
+                                # test which reading mode is faster, direct or indirect
+                                direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                         in_nc=in_nc,
+                                                                         var_name=name,
+                                                                         index_list=index_list)
+
+                                if direct_read:
+                                    # v1.1: hydrologic parameter; merge: lon lat
+                                    # Do not access big data from netcdf lib using non-contiguous index list
+                                    var_obj[index_list] = in_nc.variables[name][index_list]
+                                else:
+                                    # Instead, read all data into memory then subset it using index list
+                                    # See speed_test.py for details
+                                    all_data_np = in_nc.variables[name][:]
+                                    var_obj[index_list] = all_data_np[index_list]
+
+                        elif len(var_obj.dimensions) == 2:
+                            if var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "feature_id":
+
+                                # test which reading mode is faster, direct or indirect
+                                direct_read = _test_read_indirect_direct(direct_read=direct_read,
+                                                                         in_nc=in_nc,
+                                                                         var_name=name,
+                                                                         index_list=index_list)
+                                # merge: hydrologic parameter
+                                if direct_read:
+                                    var_obj[0, index_list] = in_nc.variables[name][index_list]
+                                else:
+                                    all_data_np = in_nc.variables[name][:]
+                                    var_obj[0, index_list] = all_data_np[index_list]
+
+                            elif var_obj.dimensions[0] == "time" and var_obj.dimensions[1] == "reference_time":
+                                # merge: reference_time
+                                var_obj[0] = in_nc.variables[name][:]
+                            else:
+                                raise Exception("invalid nc")
+                        else:
+                            # v1.1, merge: time; v1.1: reference_time
+                            var_obj[:] = in_nc.variables[name][:]
+
     except Exception as ex:
         logger.exception(str(type(ex)) + ex.message + in_nc_file)
         if os.path.isfile(out_nc_file):

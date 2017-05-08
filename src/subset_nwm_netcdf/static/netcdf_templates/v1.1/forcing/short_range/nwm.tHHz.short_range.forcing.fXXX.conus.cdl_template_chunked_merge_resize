@@ -1,8 +1,8 @@
 netcdf {%filename%} {
 dimensions:
 	time = UNLIMITED ; // (1 currently)
-	y = 3840 ;
-	x = 4608 ;
+	y = {%y%} ;
+	x = {%x%} ;
 	reference_time = 1 ;
 	nv = 2 ;
 variables:
@@ -203,9 +203,9 @@ variables:
 		time_bounds:_Endianness = "little" ;
 
 // global attributes:
-		:Conventions = "CF-1.6" ;
 		:model_initialization_time = "{%model_initialization_time%}" ;
 		:model_output_valid_time = "{%model_output_valid_time%}" ;
+		:Conventions = "CF-1.6" ;
 		:_SuperblockVersion = 2 ;
 		:_IsNetcdf4 = 1 ;
 		:_Format = "netCDF-4 classic model" ;

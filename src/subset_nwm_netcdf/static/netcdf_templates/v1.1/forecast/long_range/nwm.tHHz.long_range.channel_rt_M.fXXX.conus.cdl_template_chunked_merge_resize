@@ -1,6 +1,6 @@
 netcdf {%filename%} {
 dimensions:
-	feature_id = 2716897 ;
+	feature_id = {%feature_id%} ;
 	time = UNLIMITED ; // (1 currently)
 	reference_time = 1 ;
 variables:
@@ -51,19 +51,6 @@ variables:
 		q_lateral:_DeflateLevel = 2 ;
 		q_lateral:_Shuffle = "true" ;
 		q_lateral:_Endianness = "little" ;
-	int velocity(time, feature_id) ;
-		velocity:_FillValue = -999900 ;
-		velocity:long_name = "River Velocity" ;
-		velocity:units = "m s-1" ;
-		velocity:coordinates = "latitude longitude" ;
-		velocity:scale_factor = 0.01 ;
-		velocity:add_offset = 0. ;
-		velocity:valid_range = 0., 1000000. ;
-		velocity:missing_value = -999900 ;
-		velocity:_Storage = "chunked" ;
-		velocity:_DeflateLevel = 2 ;
-		velocity:_Shuffle = "true" ;
-		velocity:_Endianness = "little" ;
 	int feature_id(feature_id) ;
 		feature_id:long_name = "Reach ID" ;
 		feature_id:comment = "NHDPlusv2 ComIDs within CONUS, arbitrary Reach IDs outside of CONUS" ;
