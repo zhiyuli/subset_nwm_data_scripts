@@ -40,8 +40,8 @@ if __name__ == "__main__":
 
         # Shapefile example: utah state polygon
         query_type = "shapefile"
-        shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
-        #shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
+        #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
         in_epsg = None  # epsg is optional as lib will try reading epsg code from prj file.
                         # the run will fail if the prj file contains a custom projection string that does not have a epsg code,
@@ -104,7 +104,7 @@ if __name__ == "__main__":
         # Path of output folder
         output_folder_path = "./temp"
 
-        # shrink dimension size to only cover subsetting area
+        # shrink dimension size to cover subsetting domain only
         resize_dimension_grid = False
         resize_dimension_feature = True
         # merge resulting netcdfs
