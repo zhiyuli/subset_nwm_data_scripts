@@ -121,11 +121,11 @@ if __name__ == "__main__":
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['analysis_assim']
+        #model_configuration_list = ['long_range']
 
         # list of model result data types
         data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        #data_type_list = ['channel']
+        #data_type_list = ['terrain']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
