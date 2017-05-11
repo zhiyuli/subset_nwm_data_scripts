@@ -29,9 +29,11 @@ The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74
 
  1) Remove previously added "time" dimension from "reference_time" variable as it was a violation of CF convention on "coordinate variable"";
  see: http://www.unidata.ucar.edu/software/netcdf/workshops/2011/datamodels/NcCVars.html
- But this change causes missing "reference_time" value in merged netcdfs as it only stores the value from the first file.
+ But this change causes missing "reference_time" value in merged netcdfs as it only stores the value from the first file;
 
- 2)
+ 2) Fix bug in "time_bounds" variable;
+
+
 
 ## What's new in 1.1.5 ?
 
