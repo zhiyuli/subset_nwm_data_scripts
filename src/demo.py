@@ -116,16 +116,16 @@ if __name__ == "__main__":
         simulation_date_list = ["20170419"]
 
         # list of model file types
-        #file_type_list = ["forecast", 'forcing']
-        file_type_list = ["forcing"]
+        file_type_list = ["forecast", 'forcing']
+        #file_type_list = ["forcing"]
 
         # list of model configurations
-        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_configuration_list = ['analysis_assim']
+        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        #model_configuration_list = ['analysis_assim']
 
         # list of model result data types
-        #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        data_type_list = ['channel']
+        data_type_list = ['reservoir', 'channel', 'land', 'terrain']
+        #data_type_list = ['channel']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps

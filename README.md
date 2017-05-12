@@ -27,13 +27,14 @@ The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74
 
 ## What's new in 1.1.6 ?
 
- 1) Remove previously added "time" dimension from "reference_time" variable as it was a violation of CF convention on "coordinate variable"";
+ 1) Remove previously added "time" dimension in "reference_time" variable as it was a violation of CF convention on "coordinate variable"";
  see: http://www.unidata.ucar.edu/software/netcdf/workshops/2011/datamodels/NcCVars.html
  But this change causes missing "reference_time" value in merged netcdfs as it only stores the value from the first file;
 
  2) Fix bug in "time_bounds" variable;
 
-
+ 3) Add "pyspatialite" as a optional dependency in spatial query. Will try loading pysqlite2 by default, if failed,  try loading pyspatialite lib.
+ Note: Installation of pyspatialite needs several manual steps on linux, but it is so far a good way for CentOS. On Ubuntu and Windows, user should install pysqlite2 + mod_spatialite binary;
 
 ## What's new in 1.1.5 ?
 

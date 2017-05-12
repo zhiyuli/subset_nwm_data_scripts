@@ -13,8 +13,16 @@ import shapely.wkt
 import shapely.geometry
 import shapely.ops
 import pyproj
-# import pyspatialite.dbapi2 as db
-import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
+
+pyspatialite_load = False
+try:
+    import pyspatialite.dbapi2 as db
+    pyspatialite_load = True
+except ImportError:
+    try:
+        import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
+    except ImportError:
+        raise Exception("Can not load required lib pyspatialite or pysqlite2.")
 
 logger = logging.getLogger('subset_nwm_netcdf')
 
@@ -241,8 +249,9 @@ def _perform_spatial_query(db_file=None,
                     );'
 
         conn = db.connect(db_file)
-        conn.enable_load_extension(True)
-        conn.execute("SELECT load_extension('mod_spatialite')")
+        if not pyspatialite_load:
+            conn.enable_load_extension(True)
+            conn.execute("SELECT load_extension('mod_spatialite')")
         geometry_field_name = 'Shape'
 
         if query_stream:
@@ -482,8 +491,9 @@ def _query_huc(db_file=None, huc_type=None, huc_id=None):
 
     try:
         conn = db.connect(db_file)
-        conn.enable_load_extension(True)
-        conn.execute("SELECT load_extension('mod_spatialite')")
+        if not pyspatialite_load:
+            conn.enable_load_extension(True)
+            conn.execute("SELECT load_extension('mod_spatialite')")
         cursor = conn.execute(sql_str_huc_wkt)
         huc_wkt = cursor.fetchone()[0].encode('ascii', 'ignore')
 
