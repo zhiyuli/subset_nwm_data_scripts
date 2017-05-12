@@ -390,7 +390,7 @@ variables:
 		ProjectionCoordinateSystem:false_northing = 0. ;
 		ProjectionCoordinateSystem:earth_radius = 6370000. ;
 		ProjectionCoordinateSystem:proj4 = "+proj=lcc +lat_1=30 +lat_2=60 +lat_0=40 +lon_0=-97 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs" ;
-	int reference_time(time, reference_time) ;
+	int reference_time(reference_time) ;
 		reference_time:long_name = "model initialization time" ;
 		reference_time:standard_name = "forecast_reference_time" ;
 		reference_time:units = "minutes since 1970-01-01 00:00:00 UTC" ;

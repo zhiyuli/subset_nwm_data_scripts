@@ -489,7 +489,7 @@ def _subset_grid_file(in_nc_file=None,
                         elif len(var_obj.dimensions) == 2:
                             if var_obj.dimensions[0] != "time":
                                 raise Exception("unexpected variable")
-                            var_obj[0][:] = in_nc.variables[name][:]
+                            var_obj[0, :] = in_nc.variables[name][:]
                         elif len(var_obj.dimensions) == 3:
 
                             if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \
@@ -519,7 +519,7 @@ def _subset_grid_file(in_nc_file=None,
                         elif len(var_obj.dimensions) == 2:
                             if var_obj.dimensions[0] != "time":
                                 raise Exception("unexpected variable")
-                            var_obj[0][:] = in_nc.variables[name][:]
+                            var_obj[0, :] = in_nc.variables[name][:]
                         elif len(var_obj.dimensions) == 3:
 
                             if var_obj.dimensions[0] != "time" or var_obj.dimensions[1] != "y" \

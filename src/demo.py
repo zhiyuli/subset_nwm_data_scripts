@@ -105,7 +105,7 @@ if __name__ == "__main__":
         output_folder_path = "./temp"
 
         # shrink dimension size to cover subsetting domain only
-        resize_dimension_grid = False
+        resize_dimension_grid = True
         resize_dimension_feature = True
         # merge resulting netcdfs
         merge_netcdfs = False
@@ -117,15 +117,15 @@ if __name__ == "__main__":
 
         # list of model file types
         file_type_list = ["forecast", 'forcing']
-        #file_type_list = ["forecast"]
+        #file_type_list = ["forcing"]
 
         # list of model configurations
         model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['long_range']
+        #model_configuration_list = ['analysis_assim']
 
         # list of model result data types
         data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        #data_type_list = ['terrain']
+        #data_type_list = ['channel']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
