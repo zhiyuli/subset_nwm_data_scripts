@@ -95,6 +95,12 @@ def query_comids_and_grid_indices(job_id=None,
         elif "stream" == query_type_lower:
             raise exceptions.NotImplementedError()
 
+        # convert 3D shapely geom to 2D
+        if shape_obj.has_z:
+            wkt2D = shape_obj.to_wkt()
+            shape_obj = shapely.wkt.loads(wkt2D)
+            logger.warning("Convert 3D geometry to 2D")
+
         # get the exterior of first polygon
         if shape_obj.geom_type.lower() == "multipolygon":
             polygon_exterior_linearring = shape_obj[0].exterior

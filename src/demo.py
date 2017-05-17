@@ -7,6 +7,7 @@ from subset_nwm_netcdf.subset import start_subset_nwm_netcdf_job
 from subset_nwm_netcdf.merge import start_merge_nwm_netcdf_job
 
 job_id = str(uuid.uuid4())
+logger = logging.getLogger()
 
 # create root logger
 logger = logging.getLogger()
@@ -38,14 +39,16 @@ if __name__ == "__main__":
         # Linux
         db_file_path = "/home/drew/Desktop/nwm.sqlite"
 
-        # Shapefile example: utah state polygon
+        ## Shapefile example: utah state polygon
         query_type = "shapefile"
         #shp_path = "./subset_nwm_netcdf/static/data/utah/utah_utm_nad83_zone_12.shp"
+        # Shapefile example: TwoMileCreek watershed at Tuscaloosa, AL
         shp_path = "./subset_nwm_netcdf/static/data/TwoMileCreek/TwoMileCreek_poly.shp"
         geom_str = None
         in_epsg = None  # epsg is optional as lib will try reading epsg code from prj file.
                         # the run will fail if the prj file contains a custom projection string that does not have a epsg code,
         huc_id = None
+
 
         # # geojson example
         # query_type = "geojson"
@@ -108,24 +111,25 @@ if __name__ == "__main__":
         resize_dimension_grid = True
         resize_dimension_feature = True
         # merge resulting netcdfs
-        merge_netcdfs = False
+        merge_netcdfs = True
         # remove intermediate files
         cleanup = True
+        include_AA_tm12 = False
 
         # list of simulation dates
         simulation_date_list = ["20170419"]
 
         # list of model file types
-        file_type_list = ["forecast", 'forcing']
-        #file_type_list = ["forcing"]
+        #file_type_list = ["forecast", 'forcing']
+        file_type_list = ["forecast"]
 
         # list of model configurations
-        model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        #model_configuration_list = ['analysis_assim']
+        #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
+        model_configuration_list = ['analysis_assim']
 
         # list of model result data types
-        data_type_list = ['reservoir', 'channel', 'land', 'terrain']
-        #data_type_list = ['channel']
+        #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
+        data_type_list = ['channel']
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
@@ -157,7 +161,8 @@ if __name__ == "__main__":
                                     reservoir_comid_list=reservoir_comid_list,
                                     resize_dimension_grid=resize_dimension_grid,
                                     resize_dimension_feature=resize_dimension_feature,
-                                    cleanup=cleanup)
+                                    cleanup=cleanup,
+                                    include_AA_tm12=include_AA_tm12)
 
         if merge_netcdfs:
             start_merge_nwm_netcdf_job(job_id=job_id,

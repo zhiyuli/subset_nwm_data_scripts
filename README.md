@@ -10,7 +10,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.5", where "1.1" means NWM Ver1.1 and "5" is the version of this library.
+"1.1.7", where "1.1" means NWM Ver1.1 and "7" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->
@@ -24,6 +24,12 @@ See demo.py in source
 The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 
 The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
+
+## What's new in 1.1.7 ?
+
+ 1) Add a new flag "include_AA_tm12" to control whether to subset tm01 and tm02 files of analysis_assim configuration. Default is True
+
+ 2) fix a bug in spatial query module: If incoming geometry is 3D, convert it to 2D before spatial query
 
 ## What's new in 1.1.6 ?
 

@@ -32,7 +32,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                 resize_dimension_feature=True,
                                 cleanup=True,
                                 template_version="v1.1",
-                                write_file_list=None):
+                                write_file_list=None,
+                                include_AA_tm12=True):
     """
 
     :param job_id: required, used as result folder name
@@ -140,7 +141,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                            write_file_list=write_file_list,
                                            resize_dimension_grid=resize_dimension_grid,
                                            resize_dimension_feature=resize_dimension_feature,
-                                           cleanup=cleanup)
+                                           cleanup=cleanup,
+                                           include_AA_tm12=include_AA_tm12)
                         sim_end_dt = datetime.datetime.now()
                         logger.debug(sim_end_dt)
                         sim_elapsed = sim_end_dt - sim_start_dt
@@ -226,7 +228,8 @@ def _subset_nwm_netcdf(job_id=None,
                        write_file_list=None,
                        cleanup=True,
                        resize_dimension_grid=True,
-                       resize_dimension_feature=True):
+                       resize_dimension_feature=True,
+                       include_AA_tm12=True):
 
     file_type = file_type.lower()
     model_cfg = model_cfg.lower() if model_cfg else None
@@ -241,7 +244,10 @@ def _subset_nwm_netcdf(job_id=None,
         if model_cfg == "analysis_assim":
             cdl_template_filename = "nwm.tHHz.analysis_assim.forcing.tmXX.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
-            var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+            if include_AA_tm12:
+                var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+            else:
+                var_list.append(["XX", range(0, 1)])  # 00
         elif model_cfg == "short_range":
             cdl_template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
             var_list.append(["HH", range(24)])  # 00, 01, ... 23
@@ -256,7 +262,10 @@ def _subset_nwm_netcdf(job_id=None,
     elif file_type == "forecast":
         if model_cfg == "analysis_assim":
             var_list.append(["HH", range(24)])  # 00, 01, 02...23
-            var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+            if include_AA_tm12:
+                var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+            else:
+                var_list.append(["XX", range(0, 1)])  # 00
             if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.channel_rt.tmXX.conus.cdl_template"
             elif data_type == "land":
