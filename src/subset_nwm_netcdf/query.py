@@ -393,7 +393,13 @@ def _project_shapely_geom(in_geom_obj=None,
                           out_proj_value=None):
 
     # re-project a shapely geometry object
-    # the in and out projection can be defined by epsg code, proj4 string or pyproj projection obj
+    # the in and out projection can be defined by epsg code, proj4 string or pyproj obj
+
+    # USE pycrs lib for conversion between different types of projection string
+    # Especially useful when dealing with shapefile with prj
+    # Covert any type of projection string to proj.4 string
+    # fromcrs = pycrs.parser.from_unknown_text(proj_str)
+    # fromcrs_proj4 = fromcrs.to_proj4()
 
     if in_proj_type.lower() == "epsg":
         in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=in_proj_value))

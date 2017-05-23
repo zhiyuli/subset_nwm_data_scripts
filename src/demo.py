@@ -54,7 +54,7 @@ if __name__ == "__main__":
         # query_type = "geojson"
         # shp_path = None
         # geom_str = '{ "type": "Polygon", "coordinates": [ [ [ -111.0, 39.000000000002537 ], [ -111.0, 40.000000000003041 ], [ -110.0, 40.000000000003048 ], [ -110.0, 39.000000000002551 ], [ -111.0, 39.000000000002537 ] ] ] }'
-        # in_epsg = 4269  # NAD83; epsg is required
+        # in_epsg = 4269  # NAD83; if no epsg is given then use EPSG:4326
         # huc_id = None
 
         # # wkt example
