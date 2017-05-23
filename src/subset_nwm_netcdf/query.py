@@ -179,7 +179,7 @@ def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, sh
                 raise Exception("Shapefile has no or invalid projection/epsg code")
 
         # parse shp geom
-        # check gometry type
+        # check geometry type
         geom_type = shp_obj.schema['geometry'].lower()
         if geom_type not in ["polygon", "multipolygon"]:
             raise Exception("Shapefile must be type of Polygon or MultiPolygon")
@@ -193,16 +193,16 @@ def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, sh
     elif query_type_lower == "geojson":
 
         if in_epsg_checked is None:
-            raise Exception("No epsg code is given")
+            logger.warning("No epsg code is given for geojson. Assume EPSG:4326")
         geojson = json.loads(geom_str)
         shape_obj = shapely.geometry.asShape(geojson)
 
-    else:  # wkt
-
+    elif query_type_lower == "wkt":
         if in_epsg_checked is None:
             raise Exception("No epsg code is given")
-
         shape_obj = shapely.wkt.loads(geom_str)
+    else:
+        raise Exception("Unknown query_type: {0}".format(query_type_lower))
 
     return shape_obj, in_epsg_checked
 
@@ -322,6 +322,7 @@ def _query_grid_indices_xy_nc(wkt_str=None,
     shape_obj = shapely.wkt.loads(wkt_str)
     in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=wkt_epsg))
 
+    # custom proj.4 projection string used by all forcing, land and terrain files (NWM v1.1)
     forcing_proj4 = '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=40 +lon_0=-97 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs'
     forcing_pyproj_obj = pyproj.Proj(forcing_proj4)
 
