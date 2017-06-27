@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='subset_nwm_netcdf',
-      version='1.1.7',
+      version='1.1.8',
       description='Subset National Water Model (NWM) NetCDF Ver1.1',
       url='https://github.com/zhiyuli/subset_nwm_netcdf',
       author='Zhiyu/Drew Li',
@@ -17,7 +17,8 @@ setup(name='subset_nwm_netcdf',
           'pysqlite>=2.8.3',
           'numpy>=1.2.1',
           'pyproj>=1.9.5.1',
-          'netCDF4>=1.2.7'],
+          'netCDF4>=1.2.7',
+          'GDAL>=2.1.2'],
       # package_data={'': ['*.py'],
       #               'subset_nwm_netcdf': ['static/sed_win/*',
       #                                     'static/data/utah/*',

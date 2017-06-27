@@ -10,7 +10,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.7", where "1.1" means NWM Ver1.1 and "7" is the version of this library.
+"1.1.8", where "1.1" means NWM Ver1.1 and "8" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->
@@ -24,6 +24,11 @@ See demo.py in source
 The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 
 The watershed poylgon shapefiel is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
+
+## What's new in 1.1.8 ?
+
+ 1) Improve coordinate projection handling:
+    If shapefile/geojson/wkt user provides has a custom projection that SQLite DB doesn't support, use GDAL to re-project it to a well-know projection (4326) before spatial query
 
 ## What's new in 1.1.7 ?
 
@@ -91,7 +96,7 @@ Preliminary functional testings passed with Python 2.7.12 x64 on Windows 7 x64 a
 
 4) numpy >= 1.12.1 @ https://pypi.python.org/pypi/numpy
 
-5) pyproj >= 1.9.5.1 @ https://pypi.python.org/pypi/pyproj
+5) GDAL >= 2.1.3 @ https://pypi.python.org/pypi/GDAL/2.1.3
 
 6) spatial query supporting files (1.1.4) @ https://www.hydroshare.org/resource/23c05d3177654a9ab9dc9023d00d16ed/
 
