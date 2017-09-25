@@ -183,6 +183,7 @@ def _merge_nwm_netcdf(simulation_date_list=None,
 
 
     # merge daily analysis_assim to one file
+    logger.debug("Prepare to merge daily analysis_assim into one if needed...")
     r = re.compile(r"nwm.20\d\d\d\d\d\d")
     date_dir_name_list = filter(lambda x: os.path.isdir(os.path.join(output_base_path, x)) and r.match(x),
                                 os.listdir(output_base_path))
@@ -194,9 +195,9 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                 file_list = []
                 merged_file_name = "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
                                                                                                 tm=tm)
-                merged_file_path = os.path.join(output_simulation_folder_path, merged_file_name)
+                merged_file_path = os.path.join(output_base_path, merged_file_name)
                 for date_dir_name in date_dir_name_list:
-                    path = os.path.join(output_simulation_folder_path, date_dir_name, config_name,
+                    path = os.path.join(output_base_path, date_dir_name, config_name,
                                         "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
                                                                                                      tm=tm))
                     file_list = file_list + glob.glob(path)
