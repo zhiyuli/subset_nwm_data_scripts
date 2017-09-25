@@ -10,7 +10,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.9", where "1.1" means NWM Ver1.1 and "9" is the version of this library.
+"1.1.X", say "1.1.8, "where "1.1" means NWM Ver1.1 and "8" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->
@@ -25,19 +25,17 @@ The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at
 
 The watershed poylgon shapefile is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
-## What's new in 1.1.9 ?
+## What's new in 1.1.8 ?
 
- 1) Merge multi-day analysis_assim subsetting results into one:
+ 1) Improve coordinate projection handling:
+    If shapefile/geojson/wkt user provides has a custom projection that SQLite DB doesn't support, use GDAL to re-project it to a well-know projection (4326) before spatial query
+
+ 2) Merge multi-day analysis_assim subsetting results into one:
     The naming converstion of resulting files:
     nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc
     {geometry}: forcing, channel_rt, reservoir, terrain_rt, land
     {tm}: 00, 01, 02
     Daily analysis_assim subsetting results will still be kept
-
-## What's new in 1.1.8 ?
-
- 1) Improve coordinate projection handling:
-    If shapefile/geojson/wkt user provides has a custom projection that SQLite DB doesn't support, use GDAL to re-project it to a well-know projection (4326) before spatial query
 
 ## What's new in 1.1.7 ?
 

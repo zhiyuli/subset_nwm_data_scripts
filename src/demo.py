@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
-        file_type_list = ["forecast"]
+        file_type_list = ["forcing"]
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
