@@ -4,6 +4,7 @@ import datetime
 import re
 import copy
 import logging
+import glob
 
 logger = logging.getLogger('subset_nwm_netcdf')
 
@@ -179,6 +180,59 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                         logger.debug(merge_end_dt)
                         merge_elapse_dt = merge_end_dt - merge_start_dt
                         logger.info("Done in {merge_elapse_dt}".format(merge_elapse_dt=str(merge_elapse_dt)))
+
+    # merge daily analysis_assim to one file
+    r = re.compile(r"nwm.20\d\d\d\d\d\d")
+    date_dir_name_list = filter(lambda x: os.path.isdir(os.path.join(output_simulation_folder_path, x)) and r.match(x),
+                                os.listdir(output_simulation_folder_path))
+    date_dir_name_list.sort(key=lambda x: int(x.split('.')[1]))
+
+    for config_name in ["analysis_assim", "forcing_analysis_assim"]:
+        for geometry in ["channel_rt", "reservoir", "land", "terrain_rt", "forcing"]:
+            for tm in ["00", "01", "02"]:
+                file_list = []
+                merged_file_name = "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                                                                                                tm=tm)
+                merged_file_path = os.path.join(output_simulation_folder_path, merged_file_name)
+                for date_dir_name in date_dir_name_list:
+                    path = os.path.join(output_simulation_folder_path, date_dir_name, config_name,
+                                        "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                                                                                                     tm=tm))
+                    file_list = file_list + glob.glob(path)
+
+                # merge netcdf
+                if len(file_list) <= 1:
+                    continue
+                file_list.sort()
+                ncrcat_cmd = ["ncrcat", "-h"]
+
+                ncrcat_cmd.append("-o")
+                ncrcat_cmd.append(merged_file_path)
+
+                for item_file_path in file_list:
+                    ncrcat_cmd.append(item_file_path)
+
+                try:
+                    proc = subprocess.Popen(ncrcat_cmd,
+                                            stdin=subprocess.PIPE,
+                                            stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE,
+                                            )
+                    proc.wait()
+                    stdout, stderr = proc.communicate()
+                    if stdout:
+                        logger.debug(stdout.rstrip())
+                    if stderr:
+                        if "INFO/WARNING".lower() in stderr.lower():
+                            logger.debug(stderr.rstrip())
+                        else:
+                            logger.error(stderr.rstrip())
+                            logger.error(str(ncrcat_cmd))
+
+                except Exception as ex:
+                    logger.error(ex.message)
+                    logger.error(str(ncrcat_cmd))
+
     pass
 
 
