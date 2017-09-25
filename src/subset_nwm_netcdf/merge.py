@@ -181,10 +181,11 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                         merge_elapse_dt = merge_end_dt - merge_start_dt
                         logger.info("Done in {merge_elapse_dt}".format(merge_elapse_dt=str(merge_elapse_dt)))
 
+
     # merge daily analysis_assim to one file
     r = re.compile(r"nwm.20\d\d\d\d\d\d")
-    date_dir_name_list = filter(lambda x: os.path.isdir(os.path.join(output_simulation_folder_path, x)) and r.match(x),
-                                os.listdir(output_simulation_folder_path))
+    date_dir_name_list = filter(lambda x: os.path.isdir(os.path.join(output_base_path, x)) and r.match(x),
+                                os.listdir(output_base_path))
     date_dir_name_list.sort(key=lambda x: int(x.split('.')[1]))
 
     for config_name in ["analysis_assim", "forcing_analysis_assim"]:
@@ -203,6 +204,7 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                 # merge netcdf
                 if len(file_list) <= 1:
                     continue
+                logger.debug("Merging daily analysis_assim into one...")
                 file_list.sort()
                 ncrcat_cmd = ["ncrcat", "-h"]
 
