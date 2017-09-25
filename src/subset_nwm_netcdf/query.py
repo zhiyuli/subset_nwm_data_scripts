@@ -297,7 +297,7 @@ def reproject_wkt_gdal(in_proj_type,
 
         source = osr.SpatialReference()
         if in_proj_type.lower() == "epsg":
-            source.ImportFromEPSG(in_proj_value)
+            source.ImportFromEPSG(int(in_proj_value))
         elif in_proj_type.lower() == "proj4":
             source.ImportFromProj4(in_proj_value)
         elif in_proj_type.lower() == "esri":
