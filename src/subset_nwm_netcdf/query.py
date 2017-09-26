@@ -4,7 +4,7 @@ import exceptions
 import logging
 import datetime
 import copy
-from functools import partial
+# from functools import partial
 
 import netCDF4
 import numpy
@@ -12,7 +12,9 @@ import fiona
 import shapely.wkt
 import shapely.geometry
 import shapely.ops
-import pyproj
+# import pyproj
+from osgeo import ogr
+from osgeo import osr
 
 pyspatialite_load = False
 try:
@@ -81,38 +83,23 @@ def query_comids_and_grid_indices(job_id=None,
         query_reservoir = True
         if query_type_lower in ["shapefile", "geojson", "wkt"]:
 
-            shape_obj, in_epsg_checked = _get_shapely_shape_obj(db_file=db_file_path,
-                                                                query_type_lower=query_type_lower,
-                                                                in_epsg=in_epsg,
-                                                                shp_path=shp_path,
-                                                                geom_str=geom_str)
+            wkt_polygon, in_epsg_checked = _get_first_polygon_exterior_wkt(db_file=db_file_path,
+                                                                           query_type_lower=query_type_lower,
+                                                                           in_epsg=in_epsg,
+                                                                           shp_path=shp_path,
+                                                                           geom_str=geom_str)
         elif "huc" in query_type_lower:
 
-            shape_obj, in_epsg_checked = _get_huc_bbox_shapely_shape_obj(db_file=db_file_path,
-                                                                         db_epsg=db_epsg_code,
-                                                                         huc_type=query_type_lower,
-                                                                         huc_id=huc_id)
+            wkt_polygon, in_epsg_checked = _get_huc_polygon_wkt(db_file=db_file_path,
+                                                                db_epsg=db_epsg_code,
+                                                                huc_type=query_type_lower,
+                                                                huc_id=huc_id)
         elif "stream" == query_type_lower:
             raise exceptions.NotImplementedError()
 
-        # convert 3D shapely geom to 2D
-        if shape_obj.has_z:
-            wkt2D = shape_obj.to_wkt()
-            shape_obj = shapely.wkt.loads(wkt2D)
-            logger.warning("Convert 3D geometry to 2D")
-
-        # get the exterior of first polygon
-        if shape_obj.geom_type.lower() == "multipolygon":
-            polygon_exterior_linearring = shape_obj[0].exterior
-        elif shape_obj.geom_type.lower() == "polygon":
-            polygon_exterior_linearring = shape_obj.exterior
-        else:
-            raise Exception("Input Geometry is not Polygon")
-
-        polygon_query_window = shapely.geometry.Polygon(polygon_exterior_linearring)
         data = _perform_spatial_query(db_file=db_file_path,
                                       db_epsg=db_epsg_code,
-                                      query_window_wkt=polygon_query_window.wkt,
+                                      query_window_wkt=wkt_polygon,
                                       input_epsg=in_epsg_checked,
                                       query_stream=query_stream,
                                       query_land_grid=query_land_grid,
@@ -150,61 +137,198 @@ def query_comids_and_grid_indices(job_id=None,
         logger.info("--------------- Spatial Query Done {job_id}----------------".format(job_id=job_id))
 
 
-def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
+# def _get_shapely_shape_obj(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
+#
+#     if query_type_lower is None:
+#         raise Exception("Parameter 'query_type_lower' is not given")
+#
+#     if in_epsg is not None and not _check_supported_epsg(epsg=in_epsg, db_file=db_file):
+#         raise Exception("A invalid/unsupported epsg code is given")
+#
+#     in_epsg_checked = in_epsg
+#
+#     if query_type_lower == "shapefile":
+#         if shp_path is None or not os.path.exists(shp_path):
+#             raise Exception("Shp path is invalid")
+#         shp_obj = fiona.open(shp_path)
+#
+#         if in_epsg_checked is None:
+#             # check shapefile prj for epsg
+#             logger.info("User did not declare epsg code for this shapefile. Trying to extract epsg code from shapefile prj file....")
+#             if "init" in shp_obj.crs:
+#                 epsg = shp_obj.crs["init"].split(":")[1]
+#                 if _check_supported_epsg(epsg=epsg, db_file=db_file):
+#                     in_epsg_checked = int(epsg)
+#                     logger.info("epsg: {0}".format(str(in_epsg_checked)))
+#                 else:
+#                     raise Exception("Shapefile has unsupported projection/epsg code ")
+#             else:
+#                 raise Exception("Shapefile has no or invalid projection/epsg code")
+#
+#         # parse shp geom
+#         # check geometry type
+#         geom_type = shp_obj.schema['geometry'].lower()
+#         if geom_type not in ["polygon", "multipolygon"]:
+#             raise Exception("Shapefile must be type of Polygon or MultiPolygon")
+#
+#         first_feature_obj = next(shp_obj)
+#         shape_obj = shapely.geometry.shape(first_feature_obj["geometry"])
+#
+#         # geojson = shapely.geometry.mapping(shape_obj)
+#         # wkt_str = shape_obj.wkt
+#
+#     elif query_type_lower == "geojson":
+#
+#         if in_epsg_checked is None:
+#             logger.warning("No epsg code is given for geojson. Assume EPSG:4326")
+#         geojson = json.loads(geom_str)
+#         shape_obj = shapely.geometry.asShape(geojson)
+#
+#     elif query_type_lower == "wkt":
+#         if in_epsg_checked is None:
+#             raise Exception("No epsg code is given")
+#         shape_obj = shapely.wkt.loads(geom_str)
+#     else:
+#         raise Exception("Unknown query_type: {0}".format(query_type_lower))
+#
+#     return shape_obj, in_epsg_checked
+
+
+def _get_first_polygon_exterior_wkt(db_file=None, query_type_lower=None, in_epsg=None, shp_path=None, geom_str=None):
+
+    well_known_epsg = 4269
+    prj_path = None
 
     if query_type_lower is None:
         raise Exception("Parameter 'query_type_lower' is not given")
 
-    if in_epsg is not None and not _check_supported_epsg(epsg=in_epsg, db_file=db_file):
-        raise Exception("A invalid/unsupported epsg code is given")
-
-    in_epsg_checked = in_epsg
-
     if query_type_lower == "shapefile":
         if shp_path is None or not os.path.exists(shp_path):
             raise Exception("Shp path is invalid")
-        shp_obj = fiona.open(shp_path)
+        prj_path = shp_path.replace(".shp", ".prj")
+        if not os.path.exists(prj_path):
+            raise Exception("Can not find projection file (*.prj).")
 
-        if in_epsg_checked is None:
-            # check shapefile prj for epsg
-            logger.info("User did not declare epsg code for this shapefile. Trying to extract epsg code from shapefile prj file....")
-            if "init" in shp_obj.crs:
-                epsg = shp_obj.crs["init"].split(":")[1]
-                if _check_supported_epsg(epsg=epsg, db_file=db_file):
-                    in_epsg_checked = int(epsg)
-                    logger.info("epsg: {0}".format(str(in_epsg_checked)))
-                else:
-                    raise Exception("Shapefile has unsupported projection/epsg code ")
-            else:
-                raise Exception("Shapefile has no or invalid projection/epsg code")
+        shp_obj_fiona = fiona.open(shp_path)
+
+        # check shapefile prj for epsg code
+        if "init" in shp_obj_fiona.crs:
+            in_epsg = shp_obj_fiona.crs["init"].split(":")[1]
+        else:
+            in_epsg = -9999
+        logger.info("Trying to extract epsg code from shapefile prj file: {0}".format(in_epsg))
 
         # parse shp geom
-        # check gometry type
-        geom_type = shp_obj.schema['geometry'].lower()
+        # check geometry type
+        geom_type = shp_obj_fiona.schema['geometry'].lower()
         if geom_type not in ["polygon", "multipolygon"]:
             raise Exception("Shapefile must be type of Polygon or MultiPolygon")
 
-        first_feature_obj = next(shp_obj)
+        first_feature_obj = next(shp_obj_fiona)
         shape_obj = shapely.geometry.shape(first_feature_obj["geometry"])
-
-        # geojson = shapely.geometry.mapping(shape_obj)
-        # wkt_str = shape_obj.wkt
 
     elif query_type_lower == "geojson":
 
-        if in_epsg_checked is None:
-            raise Exception("No epsg code is given")
+        if in_epsg is None:
+            raise Exception("No epsg code is given for geojson")
         geojson = json.loads(geom_str)
         shape_obj = shapely.geometry.asShape(geojson)
 
-    else:  # wkt
-
-        if in_epsg_checked is None:
-            raise Exception("No epsg code is given")
-
+    elif query_type_lower == "wkt":
+        if in_epsg is None:
+            raise Exception("No epsg code is given for WKT")
         shape_obj = shapely.wkt.loads(geom_str)
+    else:
+        raise Exception("Unknown query_type: {0}".format(query_type_lower))
 
-    return shape_obj, in_epsg_checked
+    # convert 3D geom to 2D
+    if shape_obj.has_z:
+        wkt2D = shape_obj.wkt
+        shape_obj = shapely.wkt.loads(wkt2D)
+
+    # check shaps_obj is "polygon" or "multipolygon"
+    if shape_obj.geom_type.lower() == "multipolygon":
+        polygon_exterior_linearring = shape_obj[0].exterior
+    elif shape_obj.geom_type.lower() == "polygon":
+        polygon_exterior_linearring = shape_obj.exterior
+    else:
+        raise Exception("Input Geometry is not Polygon")
+
+    polygon_exterior_linearring_shape_obj = shapely.geometry.Polygon(polygon_exterior_linearring)
+
+    # check in_epsg is supported in SQLite db
+    if _check_supported_epsg(epsg=in_epsg, db_file=db_file):
+        in_epsg_checked = in_epsg
+        wkt_polygon = polygon_exterior_linearring_shape_obj.wkt
+    else:
+        # in_epsg code is not supported by SQLite db, need to re-project it into a well-known projection: 4326
+        if query_type_lower == "geojson" or query_type_lower == "wkt":
+            in_proj_type = "epsg"
+            in_proj_value = in_epsg
+
+        elif query_type_lower == "shapefile":
+            with open(prj_path, 'r') as content_file:
+                prj_str_raw = content_file.read()
+                prj_str = prj_str_raw.replace('\n', '')
+                in_proj_type = "esri"
+                in_proj_value = prj_str
+        # use GDAL for coordinate re-projection
+        wkt_reprojected = reproject_wkt_gdal(in_proj_type=in_proj_type,
+                                             in_proj_value=in_proj_value,
+                                             out_proj_type="epsg",
+                                             out_proj_value=well_known_epsg,
+                                             in_geom_wkt=polygon_exterior_linearring_shape_obj.wkt)
+
+        in_epsg_checked = well_known_epsg
+        wkt_polygon = wkt_reprojected
+
+    return wkt_polygon, in_epsg_checked
+
+
+def reproject_wkt_gdal(in_proj_type,
+                       in_proj_value,
+                       out_proj_type,
+                       out_proj_value,
+                       in_geom_wkt):
+
+    try:
+        if 'GDAL_DATA' not in os.environ:
+            raise Exception("Environment variable 'GDAL_DATA' not found!")
+
+        source = osr.SpatialReference()
+        if in_proj_type.lower() == "epsg":
+            source.ImportFromEPSG(int(in_proj_value))
+        elif in_proj_type.lower() == "proj4":
+            source.ImportFromProj4(in_proj_value)
+        elif in_proj_type.lower() == "esri":
+            source.ImportFromESRI([in_proj_value])
+        else:
+            raise Exception("unsupported projection type: " + out_proj_type)
+
+        target = osr.SpatialReference()
+        if out_proj_type.lower() == "epsg":
+            target.ImportFromEPSG(out_proj_value)
+        elif out_proj_type.lower() == "proj4":
+            target.ImportFromProj4(out_proj_value)
+        elif out_proj_type.lower() == "esri":
+            target.ImportFromESRI([out_proj_value])
+        else:
+            raise Exception("unsupported projection type: " + out_proj_type)
+
+        transform = osr.CoordinateTransformation(source, target)
+
+        geom_gdal = ogr.CreateGeometryFromWkt(in_geom_wkt)
+        geom_gdal.Transform(transform)
+
+        return geom_gdal.ExportToWkt()
+
+    except Exception as ex:
+        logger.error("in_proj_type: {0}".format(in_proj_type))
+        logger.error("in_proj_value: {0}".format(in_proj_value))
+        logger.error("out_proj_type: {0}".format(out_proj_type))
+        logger.error("out_proj_value: {0}".format(out_proj_value))
+        logger.error(str(type(ex)) + " " + ex.message)
+        raise ex
 
 
 def _check_supported_epsg(epsg=None, db_file=None):
@@ -319,17 +443,27 @@ def _query_grid_indices_xy_nc(wkt_str=None,
     # 2) get the bounding box
     # 3) get indices for bounding box corner points (inspired by: http://kbkb-wx-python.blogspot.com/2016/08/find-nearest-latitude-and-longitude.html)
 
-    shape_obj = shapely.wkt.loads(wkt_str)
-    in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=wkt_epsg))
+    # shape_obj = shapely.wkt.loads(wkt_str)
+    # in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=wkt_epsg))
+
+    ## custom proj.4 projection string used by all forcing, land and terrain files (NWM v1.1)
+    # forcing_proj4 = '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=40 +lon_0=-97 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs'
+    # forcing_pyproj_obj = pyproj.Proj(forcing_proj4)
+
+
+    # shape_obj_reprojected = _project_shapely_geom(in_geom_obj=shape_obj,
+    #                                               in_proj_type="pyproj",
+    #                                               in_proj_value=in_pyproj_obj,
+    #                                               out_proj_type="pyproj",
+    #                                               out_proj_value=forcing_pyproj_obj)
 
     forcing_proj4 = '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=40 +lon_0=-97 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs'
-    forcing_pyproj_obj = pyproj.Proj(forcing_proj4)
-
-    shape_obj_reprojected = _project_shapely_geom(in_geom_obj=shape_obj,
-                                                  in_proj_type="pyproj",
-                                                  in_proj_value=in_pyproj_obj,
-                                                  out_proj_type="pyproj",
-                                                  out_proj_value=forcing_pyproj_obj)
+    wkt_str_reprojected = reproject_wkt_gdal("epsg",
+                                             wkt_epsg,
+                                             "proj4",
+                                             forcing_proj4,
+                                             wkt_str)
+    shape_obj_reprojected = shapely.wkt.loads(wkt_str_reprojected)
 
     minX = shape_obj_reprojected.bounds[0]
     maxX = shape_obj_reprojected.bounds[2]
@@ -385,36 +519,42 @@ def _find_closest_value_from_1d_netcdf(netcdf_path=None, search_value_dict=None,
     return offset_value_dict, closest_idx_dict, closest_value_dict
 
 
-def _project_shapely_geom(in_geom_obj=None,
-                          in_proj_type=None,
-                          in_proj_value=None,
-                          out_proj_type=None,
-                          out_proj_value=None):
-
-    # re-project a shapely geometry object
-    # the in and out projection can be defined by epsg code, proj4 string or pyproj projection obj
-
-    if in_proj_type.lower() == "epsg":
-        in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=in_proj_value))
-    elif in_proj_type.lower() == "proj4":
-         in_pyproj_obj = pyproj.Proj(in_proj_value)
-    elif in_proj_type.lower() == "pyproj":
-         in_pyproj_obj = in_proj_value
-
-    if out_proj_type.lower() == "epsg":
-        out_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=out_proj_value))
-    elif out_proj_type.lower() == "proj4":
-        out_pyproj_obj = pyproj.Proj(out_proj_value)
-    elif out_proj_type.lower() == "pyproj":
-         out_pyproj_obj = out_proj_value
-
-    project = partial(
-        pyproj.transform,
-        in_pyproj_obj,
-        out_pyproj_obj)
-    out_geom_obj = shapely.ops.transform(project, in_geom_obj)
-
-    return out_geom_obj
+# def _project_shapely_geom(in_geom_obj=None,
+#                           in_proj_type=None,
+#                           in_proj_value=None,
+#                           out_proj_type=None,
+#                           out_proj_value=None):
+#
+#     # re-project a shapely geometry object
+#     # the in and out projection can be defined by epsg code, proj4 string or pyproj obj
+#
+#     # USE pycrs lib for conversion between different types of projection string
+#     # Especially useful when dealing with shapefile with prj
+#     # Covert any type of projection string to proj.4 string
+#     # fromcrs = pycrs.parser.from_unknown_text(proj_str)
+#     # fromcrs_proj4 = fromcrs.to_proj4()
+#
+#     if in_proj_type.lower() == "epsg":
+#         in_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=in_proj_value))
+#     elif in_proj_type.lower() == "proj4":
+#          in_pyproj_obj = pyproj.Proj(in_proj_value)
+#     elif in_proj_type.lower() == "pyproj":
+#          in_pyproj_obj = in_proj_value
+#
+#     if out_proj_type.lower() == "epsg":
+#         out_pyproj_obj = pyproj.Proj(init='epsg:{wkt_epsg}'.format(wkt_epsg=out_proj_value))
+#     elif out_proj_type.lower() == "proj4":
+#         out_pyproj_obj = pyproj.Proj(out_proj_value)
+#     elif out_proj_type.lower() == "pyproj":
+#          out_pyproj_obj = out_proj_value
+#
+#     project = partial(
+#         pyproj.transform,
+#         in_pyproj_obj,
+#         out_pyproj_obj)
+#     out_geom_obj = shapely.ops.transform(project, in_geom_obj)
+#
+#     return out_geom_obj
 
 # # Deprecated
 # def _query_grid_indices_tif(wkt_str=None,
@@ -469,7 +609,7 @@ def _project_shapely_geom(in_geom_obj=None,
 #     return {"minX": x_min, "maxX": x_max, "minY": y_min, "maxY": y_max}
 
 
-def _get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, huc_id=None):
+def _get_huc_polygon_wkt(db_file=None, db_epsg=None, huc_type=None, huc_id=None):
 
     if huc_type not in ["huc_8", "huc_10", "huc_12"]:
         raise Exception("Only support huc_8, huc_10 and huc_12")
@@ -482,9 +622,9 @@ def _get_huc_bbox_shapely_shape_obj(db_file=None, db_epsg=None, huc_type=None, h
 
     huc_wkt = _query_huc(db_file=db_file, huc_type=huc_type, huc_id=huc_id)
 
-    shape_obj = shapely.wkt.loads(huc_wkt)
+    #shape_obj = shapely.wkt.loads(huc_wkt)
 
-    return shape_obj, db_epsg
+    return huc_wkt, db_epsg
 
 
 def _query_huc(db_file=None, huc_type=None, huc_id=None):
