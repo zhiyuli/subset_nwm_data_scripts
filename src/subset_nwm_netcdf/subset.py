@@ -179,7 +179,7 @@ def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
     if "windows" in platform.system().lower():
         # remove 'sedXXXXX' files created by sed, which is a unresolved bug of gnu sed on windows
         # see: https://sourceforge.net/p/gnuwin32/bugs/500/
-        pattern = re.compile("sed\w\w\w\w\w")
+        pattern = re.compile(r"sed\w\w\w\w\w")
         folder_content_list = os.listdir("./")
         [os.remove(fn) for fn in folder_content_list if pattern.match(fn) and os.path.isfile(fn)]
 
@@ -416,9 +416,27 @@ def _subset_nwm_netcdf(job_id=None,
         out_nc_file = os.path.join(out_nc_folder_path, nc_filename)
         in_nc_file = os.path.join(in_nc_folder_path, nc_filename)
         if not os.path.isfile(in_nc_file):
-            logger.warning("Original netcdf missing @: {0}".format(in_nc_file))
-            # skip this netcdf as its original file is missing
-            continue
+
+            # locate_old_AA_data on RENCI server:
+            r = re.compile(r"nwm\.(\d\d\d\d\d\d\d\d)/(.*analysis_assim)/nwm\.t\d\dz\.analysis_assim\.(\w+)\.tm0\d\.conus\.nc")
+            match_obj = r.search(in_nc_file)
+            if match_obj:
+                date_str = match_obj.group(1)
+                config_str = match_obj.group(2)
+                geom_str = match_obj.group(3)
+                fn_nc = os.path.basename(in_nc_file)
+                fn_list = fn_nc.split(".")
+                fn_list.insert(1, date_str)
+                fn_nc_new = ".".join(fn_list)
+                base = "/projects/water/nwm/data"
+                fn_nc_new_path = os.path.join(base, config_str, fn_nc_new)
+                if os.path.isfile(fn_nc_new_path):
+                    in_nc_file = fn_nc_new_path
+                    logger.warning("Original netcdf found at @: {0}".format(in_nc_file))
+            else:
+                logger.warning("Original netcdf missing @: {0}".format(in_nc_file))
+                # skip this netcdf as its original file is missing
+                continue
 
         if os.path.isfile(out_nc_file):
             logger.debug("Overwriting existing nc file @: {0}".format(out_nc_file))
