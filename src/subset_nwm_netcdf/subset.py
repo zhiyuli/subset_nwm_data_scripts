@@ -167,7 +167,6 @@ def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
         sed_cmd = [default_sed_win_path, "-i", "s/{0}/{1}/g".format(search_text, replace_text), file_path]
     else:
         sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
-
     proc = subprocess.Popen(sed_cmd,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,

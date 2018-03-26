@@ -37,7 +37,7 @@ if __name__ == "__main__":
         #db_file_path = "F:/NWM/DB/nwm.sqlite"
 
         # Linux
-        db_file_path = "/home/drew/Desktop/nwm.sqlite"
+        db_file_path = "/projects/hydroshare/apps/apps_common_files/nwm.sqlite"
 
         ## Shapefile example: utah state polygon
         query_type = "shapefile"
@@ -102,7 +102,8 @@ if __name__ == "__main__":
         # Windows
         #netcdf_folder_path = "G:\\nwm_new_data"
         # Linux
-        netcdf_folder_path = "/media/sf_nwm_new_data"
+        #netcdf_folder_path = "/projects/water/nwm/data"
+        netcdf_folder_path = "/media/sf_NWM/"
 
         # Path of output folder
         output_folder_path = "./temp"
@@ -113,11 +114,11 @@ if __name__ == "__main__":
         # merge resulting netcdfs
         merge_netcdfs = True
         # remove intermediate files
-        cleanup = True
+        cleanup = False
         include_AA_tm12 = False
 
         # list of simulation dates
-        simulation_date_list = ["20170419"]
+        simulation_date_list = ["20180307"]
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
@@ -133,7 +134,7 @@ if __name__ == "__main__":
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = []
+        time_stamp_list = [0, 1, 3]
 
         grid_land_dict = query_result_dict["grid_land"]
         grid_terrain_dict = query_result_dict["grid_terrain"]
@@ -162,7 +163,8 @@ if __name__ == "__main__":
                                     resize_dimension_grid=resize_dimension_grid,
                                     resize_dimension_feature=resize_dimension_feature,
                                     cleanup=cleanup,
-                                    include_AA_tm12=include_AA_tm12)
+                                    include_AA_tm12=include_AA_tm12,
+                                    template_version="v1.2")
 
         if merge_netcdfs:
             start_merge_nwm_netcdf_job(job_id=job_id,
