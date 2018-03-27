@@ -2,12 +2,17 @@
 
 
 NWM Updates:
+
 v1.2
+
 National Water Model (NWM) Ver1.2 has been in production since UTC time 16:00 March 6, 2018
+
 Details about changes in v1.2:  http://www.nws.noaa.gov/om/notification/scn18-16national_water_model.htm
 
 v1.1
+
 National Water Model (NWM) Ver1.1 has been in production since UTC time 12PM May 8, 2017
+
 Details about changes in v1.1:  http://www.nws.noaa.gov/os/notification/scn17-41natl_water_modelaaa.htm
 
 ## What is NWM
@@ -18,7 +23,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
-"1.1.X", say "1.1.6", where "1.1" means NWM Ver1.1 and "6" is the version of this library.
+"1.2.X", say "1.2.5", where "1.2" means NWM Ver1.2 and "5" is the version of this library.
 
 ## Workflow:
 user-provided polygon --> Spatial Query module* --> stream comids & reservoir comids & grid cell indices (forcing & land & terrain) -->

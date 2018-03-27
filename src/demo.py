@@ -122,11 +122,11 @@ if __name__ == "__main__":
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
-        file_type_list = ["forcing"]
+        file_type_list = ["forecast"]
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_configuration_list = ['analysis_assim']
+        model_configuration_list = ['medium_range']
 
         # list of model result data types
         #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = [0, 1, 3]
+        time_stamp_list = [6]
 
         grid_land_dict = query_result_dict["grid_land"]
         grid_terrain_dict = query_result_dict["grid_terrain"]
@@ -164,7 +164,7 @@ if __name__ == "__main__":
                                     resize_dimension_feature=resize_dimension_feature,
                                     cleanup=cleanup,
                                     include_AA_tm12=include_AA_tm12,
-                                    template_version="v1.2")
+                                    template_version="v1.1")
 
         if merge_netcdfs:
             start_merge_nwm_netcdf_job(job_id=job_id,
