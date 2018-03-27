@@ -10,6 +10,7 @@ import logging
 import numpy
 import netCDF4
 
+import configs
 
 logger = logging.getLogger('subset_nwm_netcdf')
 default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32/sed.exe")
@@ -126,6 +127,14 @@ def start_subset_nwm_netcdf_job(job_id=None,
                         sim_start_dt = datetime.datetime.now()
                         logger.debug(sim_start_dt)
 
+
+                        if int(simulation_date) < int(configs.transition_date_v12):
+                            template_version = "v1.1"
+                        elif int(simulation_date) > int(configs.transition_date_v12):
+                            template_version = "v1.2"
+                        else:
+                            logger.warning("User should manually set NWM Version")
+
                         _subset_nwm_netcdf(job_id=job_id,
                                            grid_dict=grid_dict,
                                            comid_list=comid_list,
@@ -167,7 +176,6 @@ def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
         sed_cmd = [default_sed_win_path, "-i", "s/{0}/{1}/g".format(search_text, replace_text), file_path]
     else:
         sed_cmd = ['sed', '-i', 's/{0}/{1}/g'.format(search_text, replace_text), file_path]
-
     proc = subprocess.Popen(sed_cmd,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
@@ -191,10 +199,19 @@ def _replace_text_in_file(search_text=None, replace_text=None, file_path=None):
         raise Exception(" replace_text_in_file() error @ {0}".format(file_path))
 
 
-def _create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True):
+def _create_nc_from_cdf(cdl_file=None, out_file=None, remove_cdl=True, format="NETCDF4_CLASSIC"):
     # -7: netcdf-4 classic model
     # subprocess.call(['ncgen', '-7', '-o', out_file, cdl_file])
-    ncgen_cmd = ['ncgen', '-7', '-o', out_file, cdl_file]
+
+    # see: https://www.systutorials.com/docs/linux/man/1-ncgen/
+    if format.lower() == "netcdf4_classic":
+        format_para = '-7'
+    elif format.lower() == "netcdf4":
+        format_para = '-4'
+    else:
+        format_para = '-7'
+
+    ncgen_cmd = ['ncgen', format_para, '-o', out_file, cdl_file]
     proc = subprocess.Popen(ncgen_cmd,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
@@ -238,6 +255,23 @@ def _subset_nwm_netcdf(job_id=None,
 
     grid_dim_x_len = grid_dict['maxX'] - grid_dict['minX'] + 1
     grid_dim_y_len = grid_dict['maxY'] - grid_dict['minY'] + 1
+
+    netcdf_format = "NETCDF4_CLASSIC"
+    if file_type == "forcing" or \
+            file_type == "forecast" and (data_type in ["land", "terrain"]):
+        if template_version.lower() == "v1.1":
+            netcdf_format = "NETCDF4_CLASSIC"
+        elif template_version.lower() == "v1.2":
+            if file_type == "forcing":
+                netcdf_format = "NETCDF4_CLASSIC"
+            else:
+                netcdf_format = "NETCDF4"
+    elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
+        if template_version.lower() == "v1.1":
+            netcdf_format = "NETCDF4_CLASSIC"
+        elif template_version.lower() == "v1.2":
+            netcdf_format = "NETCDF4"
+
 
     var_list = []
     if file_type == "forcing":
@@ -461,16 +495,20 @@ def _subset_nwm_netcdf(job_id=None,
             content_list.append(["{%model_output_valid_time%}", "2030-01-01_00:00:00"])
 
             _render_cdl_file(content_list=content_list, file_path=cdl_file_path)
-            _create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path)
+            _create_nc_from_cdf(cdl_file=cdl_file_path, out_file=nc_template_file_path, format=netcdf_format)
 
         shutil.copyfile(nc_template_file_path, out_nc_file)
 
         if file_type == "forcing" or \
            file_type == "forecast" and (data_type in ["land", "terrain"]):
+
             _subset_grid_file(in_nc_file=in_nc_file,
                               out_nc_file=out_nc_file,
                               grid_dict=grid_dict,
-                              resize_dimension=resize_dimension_grid)
+                              resize_dimension=resize_dimension_grid,
+                              netcdf_format=netcdf_format,
+                              template_version=template_version
+                              )
 
         elif file_type == "forecast" and (data_type == "channel" or data_type == "reservoir"):
 
@@ -481,7 +519,9 @@ def _subset_nwm_netcdf(job_id=None,
                                    index_list=index_list_dict[data_type],
                                    reuse_comid_and_index=True,
                                    direct_read=direct_read,
-                                   resize_dimension=resize_dimension_feature)
+                                   resize_dimension=resize_dimension_feature,
+                                   netcdf_format=netcdf_format,
+                                   template_version=template_version)
     if cleanup:
         # remove nc_template folder
         if os.path.exists(out_nc_folder_template_path):
