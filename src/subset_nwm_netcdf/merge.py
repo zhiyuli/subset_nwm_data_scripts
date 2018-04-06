@@ -286,6 +286,9 @@ def _perform_merge(HH_re_list=None,
                     stdout, stderr = proc.communicate()
                     if stdout:
                         logger.debug(stdout.rstrip())
+                        if "error" in stdout.lower():
+                            logger.error(stdout.rstrip())
+                            raise Exception(stdout.rstrip())
                     if stderr:
                         if "INFO/WARNING".lower() in stderr.lower():
                             logger.debug(stderr.rstrip())
