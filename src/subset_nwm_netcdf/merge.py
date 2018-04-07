@@ -6,6 +6,8 @@ import copy
 import logging
 import glob
 
+import configs
+
 logger = logging.getLogger('subset_nwm_netcdf')
 
 
@@ -68,10 +70,16 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                     output_folder_path = os.path.join(output_simulation_folder_path, model_configuration_folder_name)
                     if "analysis_assim" == model_cfg:
                         fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
-                        HH_re_list = ["\d\d"]
-                        HH_merged_list = ["ALL"]
-                        XXX_re_list = ["00", "01", "02"]
-                        XXX_merged_list = ["00", "01", "02"]
+                        if int(simulation_date) == int(configs.transition_date_v12):
+                            HH_re_list = ["(00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15)", "(16|17|18|19|20|21|22|23)"]
+                            HH_merged_list = ["ALLv11", "ALLv12"]
+                            XXX_re_list = ["00", "01", "02"]
+                            XXX_merged_list = ["00", "01", "02"]
+                        else:
+                            HH_re_list = ["\d\d"]
+                            HH_merged_list = ["ALL"]
+                            XXX_re_list = ["00", "01", "02"]
+                            XXX_merged_list = ["00", "01", "02"]
                     elif "short_range" == model_cfg:
                         fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
                         HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
@@ -107,10 +115,17 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                     output_folder_path = os.path.join(output_simulation_folder_path, model_configuration_folder_name)
                     for data_type in data_type_list:
                         if "analysis_assim" == model_cfg:
-                            HH_re_list = ["\d\d"]
-                            HH_merged_list = ["ALL"]
-                            XXX_re_list = ["00", "01", "02"]
-                            XXX_merged_list = ["00", "01", "02"]
+                            if int(simulation_date) == int(configs.transition_date_v12):
+                                HH_re_list = ["(00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15)",
+                                              "(16|17|18|19|20|21|22|23)"]
+                                HH_merged_list = ["ALLv11", "ALLv12"]
+                                XXX_re_list = ["00", "01", "02"]
+                                XXX_merged_list = ["00", "01", "02"]
+                            else:
+                                HH_re_list = ["\d\d"]
+                                HH_merged_list = ["ALL"]
+                                XXX_re_list = ["00", "01", "02"]
+                                XXX_merged_list = ["00", "01", "02"]
 
                             if data_type == "channel":
                                 fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
