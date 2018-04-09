@@ -120,11 +120,11 @@ if __name__ == "__main__":
         include_AA_tm12 = False
 
         # list of simulation dates
-        simulation_date_list = ["20180305","20180306","20180307"]
+        simulation_date_list = [ "20180306", "20180307"]
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
-        file_type_list = ["forecast"]
+        file_type_list = ["forcing"]
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
