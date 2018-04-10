@@ -23,6 +23,7 @@ This python library enables users to subset NWM Ver1.1 NetCDF using a polygon th
 More about NWM: http://water.noaa.gov/about/nwm
 
 ## Version naming convention:
+
 "1.2.X", say "1.2.5", where "1.2" means NWM Ver1.2 and "5" is the version of this library.
 
 ## Workflow:
@@ -38,10 +39,33 @@ The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at
 
 The watershed poylgon shapefile is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
-## What's new in 1.2.1 ?
+
+## What's new in 1.2.3 ?
+
+Further improve support for NWM 1.2: Automatically subset and merge NWM 1.1 and NWM 1.2 data separately.
+
+The 1.2 transition happened at UTC time
+
+AA 20180306 16:00z
+
+SR 20180306 15:00z
+
+MR 20180306 12:00z
+
+LR MEM1 20180306 00:00z
+
+LR MEM2 20180306 12:00z
+
+LR MEM3 20180306 12:00z
+
+LR MEM4 20180306 12:00z
+
+## What's new in 1.2.1 and 1.2.2 ?
+
 Update to support NWM 1.2
 
 ## What's new in 1.1.9 ?
+
 This version has one minor bug fix for National Water Model Viewer Tethys App.
 App can subset AA data back to 2017-05-09 (the first archived full-day data for NWM Ver1.1)
 

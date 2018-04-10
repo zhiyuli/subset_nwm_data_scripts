@@ -24,28 +24,7 @@ def start_subset_nwm_netcdf_job2(job_id=None,
                                 cleanup=True,
                                 write_file_list=None,
                                 include_AA_tm12=True):
-    """
 
-    :param job_id: required, used as result folder name
-    :param input_netcdf_folder_path: required, original NWM netcdf base folder path
-    :param output_netcdf_folder_path: required, output results base folder path
-    :param simulation_date_list: required, list of date strings ["20170327", "20170328"]
-    :param file_type_list:  required, ["forecast", 'forcing']
-    :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
-                            "long_range": long_range_mem1-4,
-                            "long_range_mem4": indicate a specific long_range_mem4 model
-    :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
-    :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
-    :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
-    :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
-    :param stream_comid_list: required, [comid1, comid2, ...]
-    :param reservoir_comid_list: required, [comid1, comid2, ....]
-    :param resize_dimension: shrink original dimension sizes in resulting files, default: False
-    :param cleanup: remove intermediate files and only keep merged netcdfs
-    :param write_file_list: internal testing purpose, ignore this parameter
-    :param template_version: "v1.1"
-    :return: no value returned
-    """
 
     logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
 
@@ -126,7 +105,7 @@ def start_subset_nwm_netcdf_job2(job_id=None,
 
 
 
-def start_subset_nwm_netcdf_job3(job_id=None,
+def start_subset_nwm_netcdf_job(job_id=None,
                                 input_netcdf_folder_path=None,
                                 output_netcdf_folder_path=None,
                                 simulation_date_list=None,
@@ -353,7 +332,7 @@ def start_subset_nwm_netcdf_job3(job_id=None,
 
 
 
-def start_subset_nwm_netcdf_job(job_id=None,
+def start_subset_nwm_netcdf_job_old(job_id=None,
                                 input_netcdf_folder_path=None,
                                 output_netcdf_folder_path=None,
                                 simulation_date_list=None,

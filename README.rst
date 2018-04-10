@@ -58,8 +58,30 @@ https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 The watershed poylgon shapefile is at
 /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
-What's new in 1.2.1 ?
+What's new in 1.2.3 ?
 ---------------------
+
+Further improve support for NWM 1.2: Automatically subset and merge NWM
+1.1 and NWM 1.2 data separately.
+
+The 1.2 transition happened at UTC time
+
+AA 20180306 16:00z
+
+SR 20180306 15:00z
+
+MR 20180306 12:00z
+
+LR MEM1 20180306 00:00z
+
+LR MEM2 20180306 12:00z
+
+LR MEM3 20180306 12:00z
+
+LR MEM4 20180306 12:00z
+
+What's new in 1.2.1 and 1.2.2 ?
+-------------------------------
 
 Update to support NWM 1.2
 
