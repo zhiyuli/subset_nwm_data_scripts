@@ -6,6 +6,8 @@ from subset_nwm_netcdf.query import query_comids_and_grid_indices
 from subset_nwm_netcdf.subset import start_subset_nwm_netcdf_job
 from subset_nwm_netcdf.merge import start_merge_nwm_netcdf_job
 
+# from subset_nwm_netcdf.base import SubsetJobElement
+
 job_id = str(uuid.uuid4())
 logger = logging.getLogger()
 
@@ -114,11 +116,11 @@ if __name__ == "__main__":
         # merge resulting netcdfs
         merge_netcdfs = True
         # remove intermediate files
-        cleanup = False
+        cleanup = True
         include_AA_tm12 = False
 
         # list of simulation dates
-        simulation_date_list = ["20180307"]
+        simulation_date_list = [ "20180305", "20180306", "20180307"]
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
@@ -126,7 +128,7 @@ if __name__ == "__main__":
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_configuration_list = ['medium_range']
+        model_configuration_list = ['short_range']
 
         # list of model result data types
         #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
@@ -134,7 +136,7 @@ if __name__ == "__main__":
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = [6]
+        time_stamp_list = [2]
 
         grid_land_dict = query_result_dict["grid_land"]
         grid_terrain_dict = query_result_dict["grid_terrain"]
@@ -165,6 +167,24 @@ if __name__ == "__main__":
                                     cleanup=cleanup,
                                     include_AA_tm12=include_AA_tm12,
                                     template_version="v1.1")
+
+
+        #
+        # subset_job_element_list = []
+        # job1 = SubsetJobElement(stream_comid_list, "list", "20180306", "forecast", "analysis_assim", "channel", [14, 15],
+        #                      nwm_version="v1.1")
+        # subset_job_element_list.append(job1)
+        # job2 = SubsetJobElement(stream_comid_list, "list", "20180306", "forecast", "analysis_assim", "channel", [16, 17],
+        #                      nwm_version="v1.2")
+        # subset_job_element_list.append(job2)
+
+        # start_subset_nwm_netcdf_job2(job_id=job_id,
+        #                                  input_netcdf_folder_path=netcdf_folder_path,
+        #                                  output_netcdf_folder_path=output_netcdf_folder_path,
+        #                                  subset_job_element_list=subset_job_element_list,
+        #                                  cleanup=True,
+        #                                  write_file_list=None,
+        #                                  include_AA_tm12=False)
 
         if merge_netcdfs:
             start_merge_nwm_netcdf_job(job_id=job_id,

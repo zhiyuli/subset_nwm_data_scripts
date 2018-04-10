@@ -17,7 +17,322 @@ default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32
 default_nc_templates_path = os.path.join(os.path.dirname(__file__), "static/netcdf_templates")
 
 
+def start_subset_nwm_netcdf_job2(job_id=None,
+                                input_netcdf_folder_path=None,
+                                output_netcdf_folder_path=None,
+                                subset_job_element_list=None,
+                                cleanup=True,
+                                write_file_list=None,
+                                include_AA_tm12=True):
+
+
+    logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
+
+    template_folder_path = default_nc_templates_path
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
+    logger.info("---------------Subsetting {0}----------------".format(job_id))
+    start_dt = datetime.datetime.now()
+    logger.info(start_dt)
+
+    logger.info("job_id={0}".format(str(job_id)))
+    logger.info("input_netcdf_folder_path={0}".format(str(input_netcdf_folder_path)))
+    logger.info("output_netcdf_folder_path={0}".format(str(output_netcdf_folder_path)))
+    logger.info("template_folder_path={0}".format(str(template_folder_path)))
+    logger.info("cleanup={0}".format(str(cleanup)))
+    logger.info("write_file_list={0}".format(str(write_file_list)))
+
+    for ele in subset_job_element_list:
+        try:
+            simulation_date=ele.simulation_date
+            file_type = ele.file_type
+            model_cfg = ele.model_cfg
+            data_type = ele.data_type
+            timestamp = ele.timestamp
+            region = ele.region
+            region_type = ele.region_type
+            nwm_version = ele.nwm_version
+
+            if region_type.lower() == "list":
+                comid_list = region
+                grid_dict = None
+            else:
+                comid_list = None
+                grid_dict = region
+            resize_dimension = ele.resize_dimension
+
+            log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}-{time_stamp}-{version}". \
+               format(simulation_date=simulation_date, file_type=file_type,
+                      model_cfg=model_cfg, data_type=data_type, time_stamp=timestamp,version=nwm_version)
+            logger.info(log_str)
+            sim_start_dt = datetime.datetime.now()
+            logger.debug(sim_start_dt)
+
+            _subset_nwm_netcdf(job_id=job_id,
+                               grid_dict=grid_dict,
+                               comid_list=comid_list,
+                               simulation_date=ele.simulation_date,
+                               file_type=file_type,
+                               model_cfg=model_cfg,
+                               data_type=data_type,
+                               time_stamp_list=timestamp,
+                               input_folder_path=input_netcdf_folder_path,
+                               output_folder_path=output_netcdf_folder_path,
+                               template_folder_path=template_folder_path,
+                               template_version=nwm_version,
+                               write_file_list=write_file_list,
+                               resize_dimension_grid=resize_dimension,
+                               resize_dimension_feature=resize_dimension,
+                               cleanup=cleanup,
+                               include_AA_tm12=include_AA_tm12)
+
+            sim_end_dt = datetime.datetime.now()
+            logger.debug(sim_end_dt)
+            sim_elapsed = sim_end_dt - sim_start_dt
+            logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
+        except Exception as ex:
+            sim_end_dt = datetime.datetime.now()
+            logger.debug(sim_end_dt)
+            sim_elapsed = sim_end_dt - sim_start_dt
+            logger.info("Error in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
+            logger.exception(str(type(ex)) + ex.message)
+
+    end_dt = datetime.datetime.now()
+    logger.debug(end_dt)
+    elapse_dt = end_dt - start_dt
+    logger.info("Subsetting Done in {0}".format(elapse_dt))
+    logger.info("---------------------Subsetting Done {job_id}-----------------------------".format(job_id=job_id))
+
+
+
 def start_subset_nwm_netcdf_job(job_id=None,
+                                input_netcdf_folder_path=None,
+                                output_netcdf_folder_path=None,
+                                simulation_date_list=None,
+                                file_type_list=None,
+                                model_configuration_list=None,
+                                data_type_list=None,
+                                time_stamp_list=None,
+                                grid_land_dict=None,
+                                grid_terrain_dict=None,
+                                stream_comid_list=None,
+                                reservoir_comid_list=None,
+                                resize_dimension_grid=True,
+                                resize_dimension_feature=True,
+                                cleanup=True,
+                                template_version="v1.1",
+                                write_file_list=None,
+                                include_AA_tm12=True):
+    """
+
+    :param job_id: required, used as result folder name
+    :param input_netcdf_folder_path: required, original NWM netcdf base folder path
+    :param output_netcdf_folder_path: required, output results base folder path
+    :param simulation_date_list: required, list of date strings ["20170327", "20170328"]
+    :param file_type_list:  required, ["forecast", 'forcing']
+    :param model_configuration_list: required, ['analysis_assim', 'short_range', 'medium_range', 'long_range'],
+                            "long_range": long_range_mem1-4,
+                            "long_range_mem4": indicate a specific long_range_mem4 model
+    :param data_type_list: required, ['channel', 'reservoir', 'land', 'terrain']
+    :param time_stamp_list: required, [1, 2, ...];  [] or None means all default time stamps
+    :param grid_land_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param grid_terrain_dict: required, {"minX": 11, "maxX": 22, "minY": 33, "maxY": 44}
+    :param stream_comid_list: required, [comid1, comid2, ...]
+    :param reservoir_comid_list: required, [comid1, comid2, ....]
+    :param resize_dimension: shrink original dimension sizes in resulting files, default: False
+    :param cleanup: remove intermediate files and only keep merged netcdfs
+    :param write_file_list: internal testing purpose, ignore this parameter
+    :param template_version: "v1.1"
+    :return: no value returned
+    """
+
+    logger.warn("NetCDF utilities and NCO commands should be discoverable in system path")
+
+    template_folder_path = default_nc_templates_path
+    if job_id is None:
+        job_id = datetime.datetime.now().strftime("_%Y_%m_%d_")
+    logger.info("---------------Subsetting {0}----------------".format(job_id))
+    start_dt = datetime.datetime.now()
+    logger.info(start_dt)
+
+    logger.info("job_id={0}".format(str(job_id)))
+    logger.info("input_netcdf_folder_path={0}".format(str(input_netcdf_folder_path)))
+    logger.info("output_netcdf_folder_path={0}".format(str(output_netcdf_folder_path)))
+    logger.info("template_folder_path={0}".format(str(template_folder_path)))
+    logger.info("simulation_date_list={0}".format(str(simulation_date_list)))
+    logger.info("file_type_list={0}".format(str(file_type_list)))
+    logger.info("model_configuration_list={0}".format(str(model_configuration_list)))
+    logger.info("data_type_list={0}".format(str(data_type_list)))
+    logger.info("timestamp={0}".format(str(time_stamp_list)))
+    logger.info("grid_land_dict={0}".format(str(grid_land_dict)))
+    logger.info("grid_terrain_dict={0}".format(str(grid_terrain_dict)))
+    logger.info("stream_comid_list={0}".format(str(stream_comid_list)))
+    logger.info("reservoir_comid_list={0}".format(str(reservoir_comid_list)))
+    logger.info("cleanup={0}".format(str(cleanup)))
+    logger.info("write_file_list={0}".format(str(write_file_list)))
+    logger.info("template_version={0}".format(str(template_version)))
+
+    subset_work_dict = {'simulation_date': simulation_date_list,
+                        'file_type': file_type_list,
+                        'model_cfg': model_configuration_list,
+                        'data_type':  data_type_list
+                        }
+
+    for simulation_date in subset_work_dict["simulation_date"]:
+        logger.info("-------------Subsetting {0}--------------------".format(simulation_date))
+        for file_type in subset_work_dict["file_type"]:  # forcing or forecast
+            for model_cfg in subset_work_dict["model_cfg"]:  # aa sr mr lr
+                data_type_list_copy = subset_work_dict['data_type']  # channel, reservoir, land , terrain
+                if file_type == "forcing":
+                    data_type_list_copy = [None]
+                    if "long_range" in model_cfg:
+                        # long_range has no dedicated forcing files
+                        continue
+                for data_type in data_type_list_copy:
+                    try:
+                        if (data_type == "channel" and (stream_comid_list is None or len(stream_comid_list) == 0)) or \
+                                (data_type == "reservoir" and (reservoir_comid_list is None or len(reservoir_comid_list) == 0)):
+                            continue
+                        comid_list = stream_comid_list
+                        if 'reservoir' == data_type:
+                            comid_list = reservoir_comid_list
+
+                        if "long_range" in model_cfg and data_type == "terrain":
+                            # long_range has no terrain outputs
+                            continue
+
+                        if ('land' == data_type and grid_land_dict is None) or \
+                                ('terrain' == data_type and grid_terrain_dict is None):
+                            continue
+                        grid_dict = grid_land_dict
+                        if 'terrain' == data_type:
+                            grid_dict = grid_terrain_dict
+
+                        log_str = "Working on: {simulation_date}-{file_type}-{model_cfg}-{data_type}".\
+                            format(simulation_date=simulation_date, file_type=file_type,
+                                   model_cfg=model_cfg, data_type=data_type)
+                        logger.info(log_str)
+                        sim_start_dt = datetime.datetime.now()
+                        logger.debug(sim_start_dt)
+
+                        version_timestamplist_pair_list = []
+                        if int(simulation_date) < int(configs.transition_date_v12):
+                            template_version = "v1.1"
+                            version_timestamplist_pair_list.append((template_version, time_stamp_list))
+
+                        elif int(simulation_date) > int(configs.transition_date_v12):
+                            template_version = "v1.2"
+                            version_timestamplist_pair_list.append((template_version, time_stamp_list))
+                        else:  # v1.2 transition date
+                            all_timestamp = True
+                            if type(time_stamp_list) is list and len(time_stamp_list) > 0:
+                                time_stamp_list.sort()
+                                all_timestamp = False
+
+                            if model_cfg == "short_range":
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_SR))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_SR), 24)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if i < int(configs.transition_timestamp_v12_SR)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if i >= int(configs.transition_timestamp_v12_SR)]
+
+                            elif model_cfg == "medium_range":
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_MR, 6))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_MR), 24, 6)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_MR)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_MR)]
+                            elif "long_range_mem1" in model_cfg:
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM1, 6))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM1), 24, 6)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_LR_MEM1)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_LR_MEM1)]
+                            elif "long_range_mem2" in model_cfg:
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM2, 6))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM2), 24, 6)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_LR_MEM2)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_LR_MEM2)]
+                            elif "long_range_mem3" in model_cfg:
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM3, 6))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM3), 24, 6)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_LR_MEM3)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_LR_MEM3)]
+                            elif "long_range_mem4" in model_cfg:
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM4, 6))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM4), 24, 6)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_LR_MEM4)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_LR_MEM4)]
+                            elif model_cfg == "analysis_assim":
+                                if all_timestamp:
+                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_AA))
+                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_AA), 24)
+                                else:
+                                    time_stamp_v11 = [i for i in time_stamp_list if
+                                                      i < int(configs.transition_timestamp_v12_AA)]
+                                    time_stamp_v12 = [i for i in time_stamp_list if
+                                                      i >= int(configs.transition_timestamp_v12_AA)]
+                            else:
+                                raise Exception("Unknown model_cfg: {0}".format(model_cfg))
+
+                            if len(time_stamp_v11) > 0:
+                                version_timestamplist_pair_list.append(("v1.1", time_stamp_v11))
+                            if len(time_stamp_v12) > 0:
+                                version_timestamplist_pair_list.append(("v1.2", time_stamp_v12))
+
+                        for version_timestamplist_pair in version_timestamplist_pair_list:
+                            _subset_nwm_netcdf(job_id=job_id,
+                                               grid_dict=grid_dict,
+                                               comid_list=comid_list,
+                                               simulation_date=simulation_date,
+                                               file_type=file_type,
+                                               model_cfg=model_cfg,
+                                               data_type=data_type,
+                                               time_stamp_list=version_timestamplist_pair[1],
+                                               input_folder_path=input_netcdf_folder_path,
+                                               output_folder_path=output_netcdf_folder_path,
+                                               template_folder_path=template_folder_path,
+                                               template_version=version_timestamplist_pair[0],
+                                               write_file_list=write_file_list,
+                                               resize_dimension_grid=resize_dimension_grid,
+                                               resize_dimension_feature=resize_dimension_feature,
+                                               cleanup=cleanup,
+                                               include_AA_tm12=include_AA_tm12)
+                        sim_end_dt = datetime.datetime.now()
+                        logger.debug(sim_end_dt)
+                        sim_elapsed = sim_end_dt - sim_start_dt
+                        logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
+                    except Exception as ex:
+                        logger.exception(str(type(ex)) + ex.message)
+
+    end_dt = datetime.datetime.now()
+    logger.debug(end_dt)
+    elapse_dt = end_dt - start_dt
+    logger.info("Subsetting Done in {0}".format(elapse_dt))
+    logger.info("---------------------Subsetting Done {job_id}-----------------------------".format(job_id=job_id))
+
+
+
+def start_subset_nwm_netcdf_job_old(job_id=None,
                                 input_netcdf_folder_path=None,
                                 output_netcdf_folder_path=None,
                                 simulation_date_list=None,
@@ -253,8 +568,9 @@ def _subset_nwm_netcdf(job_id=None,
     data_type = data_type.lower() if data_type else None
     template_version = template_version.lower()
 
-    grid_dim_x_len = grid_dict['maxX'] - grid_dict['minX'] + 1
-    grid_dim_y_len = grid_dict['maxY'] - grid_dict['minY'] + 1
+    if grid_dict:
+        grid_dim_x_len = grid_dict['maxX'] - grid_dict['minX'] + 1
+        grid_dim_y_len = grid_dict['maxY'] - grid_dict['minY'] + 1
 
     netcdf_format = "NETCDF4_CLASSIC"
     if file_type == "forcing" or \
@@ -446,6 +762,7 @@ def _subset_nwm_netcdf(job_id=None,
     direct_read = None
     comid_list_dict[data_type] = comid_list
     index_list_dict = {"channel": None, "reservoir": None}
+    first_nc_file = True
     for nc_filename in nc_filename_list:
         out_nc_file = os.path.join(out_nc_folder_path, nc_filename)
         in_nc_file = os.path.join(in_nc_folder_path, nc_filename)
@@ -476,7 +793,8 @@ def _subset_nwm_netcdf(job_id=None,
             logger.debug("Overwriting existing nc file @: {0}".format(out_nc_file))
 
         # render a template nc file and put it under output folder
-        if not os.path.isfile(nc_template_file_path):
+        if not os.path.isfile(nc_template_file_path) or first_nc_file:
+            first_nc_file = False
             if not os.path.exists(out_nc_folder_template_path):
                 os.makedirs(out_nc_folder_template_path)
             cdl_file_path = os.path.join(out_nc_folder_template_path, cdl_filename)

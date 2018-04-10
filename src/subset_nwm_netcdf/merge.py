@@ -6,6 +6,8 @@ import copy
 import logging
 import glob
 
+import configs
+
 logger = logging.getLogger('subset_nwm_netcdf')
 
 
@@ -68,10 +70,16 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                     output_folder_path = os.path.join(output_simulation_folder_path, model_configuration_folder_name)
                     if "analysis_assim" == model_cfg:
                         fn_template = "nwm.t{HH}z.analysis_assim.forcing.tm{XXX}.conus.nc"
-                        HH_re_list = ["\d\d"]
-                        HH_merged_list = ["ALL"]
-                        XXX_re_list = ["00", "01", "02"]
-                        XXX_merged_list = ["00", "01", "02"]
+                        if int(simulation_date) == int(configs.transition_date_v12):
+                            HH_re_list = ["(00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15)", "(16|17|18|19|20|21|22|23)"]
+                            HH_merged_list = ["ALLv11", "ALLv12"]
+                            XXX_re_list = ["00", "01", "02"]
+                            XXX_merged_list = ["00", "01", "02"]
+                        else:
+                            HH_re_list = ["\d\d"]
+                            HH_merged_list = ["ALL"]
+                            XXX_re_list = ["00", "01", "02"]
+                            XXX_merged_list = ["00", "01", "02"]
                     elif "short_range" == model_cfg:
                         fn_template = "nwm.t{HH}z.short_range.forcing.f{XXX}.conus.nc"
                         HH_re_list = [str(i).zfill(2) for i in range(0, 24)]
@@ -107,10 +115,17 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                     output_folder_path = os.path.join(output_simulation_folder_path, model_configuration_folder_name)
                     for data_type in data_type_list:
                         if "analysis_assim" == model_cfg:
-                            HH_re_list = ["\d\d"]
-                            HH_merged_list = ["ALL"]
-                            XXX_re_list = ["00", "01", "02"]
-                            XXX_merged_list = ["00", "01", "02"]
+                            if int(simulation_date) == int(configs.transition_date_v12):
+                                HH_re_list = ["(00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15)",
+                                              "(16|17|18|19|20|21|22|23)"]
+                                HH_merged_list = ["ALLv11", "ALLv12"]
+                                XXX_re_list = ["00", "01", "02"]
+                                XXX_merged_list = ["00", "01", "02"]
+                            else:
+                                HH_re_list = ["\d\d"]
+                                HH_merged_list = ["ALL"]
+                                XXX_re_list = ["00", "01", "02"]
+                                XXX_merged_list = ["00", "01", "02"]
 
                             if data_type == "channel":
                                 fn_template = "nwm.t{HH}z.analysis_assim.channel_rt.tm{XXX}.conus.nc"
@@ -193,12 +208,10 @@ def _merge_nwm_netcdf(simulation_date_list=None,
         for geometry in ["channel_rt", "reservoir", "land", "terrain_rt", "forcing"]:
             for tm in ["00", "01", "02"]:
                 file_list = []
-                merged_file_name = "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
-                                                                                                tm=tm)
-                merged_file_path = os.path.join(output_base_path, merged_file_name)
+
                 for date_dir_name in date_dir_name_list:
                     path = os.path.join(output_base_path, date_dir_name, config_name,
-                                        "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                                        "nwm.tALL*z.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
                                                                                                      tm=tm))
                     file_list = file_list + glob.glob(path)
 
@@ -207,34 +220,66 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                     continue
                 logger.debug("Merging daily analysis_assim into one...")
                 file_list.sort()
-                ncrcat_cmd = ["ncrcat", "-h"]
 
-                ncrcat_cmd.append("-o")
-                ncrcat_cmd.append(merged_file_path)
+                v11_index = [file_list.index(i) for i in file_list if "v11" in i]
+                v12_index = [file_list.index(i) for i in file_list if "v12" in i]
+                merge_list = []
+                if len(v11_index) > 0:
+                    merge_list.append([(0, v11_index[0]), "nwm.tALLv11z.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                                                                                                tm=tm)])
+                if len(v12_index) > 0:
+                    merge_list.append([(v12_index[0], len(file_list)-1),
+                                       "nwm.tALLv12z.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                                           tm=tm)])
+                if len(merge_list) == 0:
+                    merge_list.append([(0, len(file_list)-1),
+                                       "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(
+                                           geometry=geometry,
+                                           tm=tm)])
 
-                for item_file_path in file_list:
-                    ncrcat_cmd.append(item_file_path)
 
-                try:
-                    proc = subprocess.Popen(ncrcat_cmd,
-                                            stdin=subprocess.PIPE,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE,
-                                            )
-                    proc.wait()
-                    stdout, stderr = proc.communicate()
-                    if stdout:
-                        logger.debug(stdout.rstrip())
-                    if stderr:
-                        if "INFO/WARNING".lower() in stderr.lower():
-                            logger.debug(stderr.rstrip())
-                        else:
-                            logger.error(stderr.rstrip())
-                            logger.error(str(ncrcat_cmd))
+                #merged_file_name = "nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc".format(geometry=geometry,
+                #                                                                               tm=tm)
+                #merged_file_path = os.path.join(output_base_path, merged_file_name)
+                for merge_ele in merge_list:
+                    file_list_subset = file_list[merge_ele[0][0]:merge_ele[0][1]+1]
+                    merged_file_path = os.path.join(output_base_path, merge_ele[1])
 
-                except Exception as ex:
-                    logger.error(ex.message)
-                    logger.error(str(ncrcat_cmd))
+                    ncrcat_cmd = ["ncrcat", "-h"]
+
+                    ncrcat_cmd.append("-o")
+                    ncrcat_cmd.append(merged_file_path)
+
+
+
+                    for item_file_path in file_list_subset:
+                        ncrcat_cmd.append(item_file_path)
+
+                    try:
+                        proc = subprocess.Popen(ncrcat_cmd,
+                                                stdin=subprocess.PIPE,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.PIPE,
+                                                )
+                        proc.wait()
+                        stdout, stderr = proc.communicate()
+                        if stdout:
+                            if "error" in stdout.lower():
+                                logger.error(logger.debug(stdout.rstrip()))
+                                logger.error(str(ncrcat_cmd))
+                            else:
+                                logger.debug(stdout.rstrip())
+
+                        if stderr:
+                            if "INFO/WARNING".lower() in stderr.lower():
+                                logger.debug(stderr.rstrip())
+                            else:
+                                logger.error(stderr.rstrip())
+                                logger.error(str(ncrcat_cmd))
+
+                    except Exception as ex:
+                        logger.error(ex.message)
+                        logger.error(str(ncrcat_cmd))
 
     pass
 
@@ -286,6 +331,9 @@ def _perform_merge(HH_re_list=None,
                     stdout, stderr = proc.communicate()
                     if stdout:
                         logger.debug(stdout.rstrip())
+                        if "error" in stdout.lower():
+                            logger.error(stdout.rstrip())
+                            raise Exception(stdout.rstrip())
                     if stderr:
                         if "INFO/WARNING".lower() in stderr.lower():
                             logger.debug(stderr.rstrip())
