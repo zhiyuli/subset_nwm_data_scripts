@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(name='subset_nwm_netcdf',
-      version='1.2.3',
+      version='1.2.4',
       description='Subset National Water Model (NWM) NetCDF',
+      long_description=open("README.rst").read(),
+      long_description_content_type="text/markdown",
       url='https://github.com/zhiyuli/subset_nwm_netcdf',
       author='Zhiyu/Drew Li',
       author_email='zyli2004@gmail.com',

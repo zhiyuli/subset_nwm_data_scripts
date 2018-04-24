@@ -120,7 +120,7 @@ if __name__ == "__main__":
         include_AA_tm12 = False
 
         # list of simulation dates
-        simulation_date_list = [ "20180305", "20180306", "20180307"]
+        simulation_date_list = ["20180307"]
 
         # list of model file types
         #file_type_list = ["forecast", 'forcing']
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
         # list of model configurations
         #model_configuration_list = ['analysis_assim', 'short_range', 'medium_range', 'long_range']
-        model_configuration_list = ['short_range']
+        model_configuration_list = ['long_range']
 
         # list of model result data types
         #data_type_list = ['reservoir', 'channel', 'land', 'terrain']
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
         # list of time stamps or model cycles
         # [1, 2, ...];  [] or None means all default time stamps
-        time_stamp_list = [2]
+        time_stamp_list = []
 
         grid_land_dict = query_result_dict["grid_land"]
         grid_terrain_dict = query_result_dict["grid_terrain"]

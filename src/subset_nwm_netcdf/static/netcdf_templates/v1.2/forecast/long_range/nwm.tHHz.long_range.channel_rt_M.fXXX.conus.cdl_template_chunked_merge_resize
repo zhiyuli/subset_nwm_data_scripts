@@ -28,7 +28,7 @@ variables:
 		feature_id:_DeflateLevel = 2 ;
 		feature_id:_Shuffle = "true" ;
 		feature_id:_Endianness = "little" ;
-	int streamflow(feature_id) ;
+	int streamflow(time, feature_id) ;
 		streamflow:_FillValue = -999900 ;
 		streamflow:missing_value = -999900 ;
 		streamflow:long_name = "River Flow" ;
@@ -41,7 +41,7 @@ variables:
 		streamflow:_DeflateLevel = 2 ;
 		streamflow:_Shuffle = "true" ;
 		streamflow:_Endianness = "little" ;
-	int nudge(feature_id) ;
+	int nudge(time, feature_id) ;
 		nudge:_FillValue = -999900 ;
 		nudge:missing_value = -999900 ;
 		nudge:long_name = "Amount of stream flow alteration" ;
@@ -54,7 +54,7 @@ variables:
 		nudge:_DeflateLevel = 2 ;
 		nudge:_Shuffle = "true" ;
 		nudge:_Endianness = "little" ;
-	int velocity(feature_id) ;
+	int velocity(time, feature_id) ;
 		velocity:_FillValue = -999900 ;
 		velocity:missing_value = -999900 ;
 		velocity:long_name = "River Velocity" ;

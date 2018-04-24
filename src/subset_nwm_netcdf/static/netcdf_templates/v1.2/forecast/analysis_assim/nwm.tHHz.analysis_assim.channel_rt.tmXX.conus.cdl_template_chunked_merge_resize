@@ -28,7 +28,7 @@ variables:
 		feature_id:_DeflateLevel = 2 ;
 		feature_id:_Shuffle = "true" ;
 		feature_id:_Endianness = "little" ;
-	int streamflow(feature_id) ;
+	int streamflow(time, feature_id) ;
 		streamflow:_FillValue = -999900 ;
 		streamflow:missing_value = -999900 ;
 		streamflow:long_name = "River Flow" ;
@@ -41,7 +41,7 @@ variables:
 		streamflow:_DeflateLevel = 2 ;
 		streamflow:_Shuffle = "true" ;
 		streamflow:_Endianness = "little" ;
-	int nudge(feature_id) ;
+	int nudge(time, feature_id) ;
 		nudge:_FillValue = -999900 ;
 		nudge:missing_value = -999900 ;
 		nudge:long_name = "Amount of stream flow alteration" ;
@@ -54,7 +54,7 @@ variables:
 		nudge:_DeflateLevel = 2 ;
 		nudge:_Shuffle = "true" ;
 		nudge:_Endianness = "little" ;
-	int velocity(feature_id) ;
+	int velocity(time, feature_id) ;
 		velocity:_FillValue = -999900 ;
 		velocity:missing_value = -999900 ;
 		velocity:long_name = "River Velocity" ;
@@ -67,7 +67,7 @@ variables:
 		velocity:_DeflateLevel = 2 ;
 		velocity:_Shuffle = "true" ;
 		velocity:_Endianness = "little" ;
-	int qSfcLatRunoff(feature_id) ;
+	int qSfcLatRunoff(time, feature_id) ;
 		qSfcLatRunoff:_FillValue = -9999000 ;
 		qSfcLatRunoff:missing_value = -9999000 ;
 		qSfcLatRunoff:long_name = "Runoff from terrain routing" ;
@@ -80,7 +80,7 @@ variables:
 		qSfcLatRunoff:_DeflateLevel = 2 ;
 		qSfcLatRunoff:_Shuffle = "true" ;
 		qSfcLatRunoff:_Endianness = "little" ;
-	int qBucket(feature_id) ;
+	int qBucket(time, feature_id) ;
 		qBucket:_FillValue = -9999000 ;
 		qBucket:missing_value = -9999000 ;
 		qBucket:long_name = "Flux from gw bucket" ;
@@ -93,7 +93,7 @@ variables:
 		qBucket:_DeflateLevel = 2 ;
 		qBucket:_Shuffle = "true" ;
 		qBucket:_Endianness = "little" ;
-	int qBtmVertRunoff(feature_id) ;
+	int qBtmVertRunoff(time, feature_id) ;
 		qBtmVertRunoff:_FillValue = -9999000 ;
 		qBtmVertRunoff:missing_value = -9999000 ;
 		qBtmVertRunoff:long_name = "Runoff from bottom of soil to bucket" ;

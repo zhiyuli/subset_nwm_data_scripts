@@ -51,7 +51,7 @@ variables:
 		elevation:_DeflateLevel = 2 ;
 		elevation:_Shuffle = "true" ;
 		elevation:_Endianness = "little" ;
-	int inflow(feature_id) ;
+	int inflow(time,feature_id) ;
 		inflow:_FillValue = -999900 ;
 		inflow:missing_value = -999900 ;
 		inflow:long_name = "Lake Inflow" ;
@@ -64,7 +64,7 @@ variables:
 		inflow:_DeflateLevel = 2 ;
 		inflow:_Shuffle = "true" ;
 		inflow:_Endianness = "little" ;
-	int outflow(feature_id) ;
+	int outflow(time,feature_id) ;
 		outflow:_FillValue = -999900 ;
 		outflow:missing_value = -999900 ;
 		outflow:long_name = "Lake Outflow" ;

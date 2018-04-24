@@ -40,6 +40,11 @@ The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at
 The watershed poylgon shapefile is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
 
+## What's new in 1.2.4 ?
+
+Fix "time" dimension bug in merged netcdf for forecast.
+
+
 ## What's new in 1.2.3 ?
 
 Further improve support for NWM 1.2: Automatically subset and merge NWM 1.1 and NWM 1.2 data separately.
