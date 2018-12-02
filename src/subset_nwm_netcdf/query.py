@@ -478,7 +478,12 @@ def _query_grid_indices_xy_nc(wkt_str=None,
     return {"minX": offset_idx_dict['x'][0],
             "maxX": offset_idx_dict['x'][1],
             "minY": offset_idx_dict['y'][0],
-            "maxY": offset_idx_dict['y'][1]}
+            "maxY": offset_idx_dict['y'][1],
+            "minX_coord": minX,
+            "maxX_coord": maxX,
+            "minY_coord": minY,
+            "maxY_coord": maxY,
+            }
 
 
 def _find_closest_value_from_1d_netcdf(netcdf_path=None, search_value_dict=None, idx_offset=0):

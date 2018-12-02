@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(name='subset_nwm_netcdf',
-      version='1.2.4',
+      version='1.2.5',
       description='Subset National Water Model (NWM) NetCDF',
       long_description=open("README.rst").read(),
       long_description_content_type="text/markdown",
