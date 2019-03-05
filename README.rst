@@ -58,12 +58,6 @@ https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 The watershed poylgon shapefile is at
 /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
-What's new in 1.2.5 ?
----------------------
-
-Return Bounding Box in NWM projection in query._do_spatial_query()
-
-
 What's new in 1.2.4 ?
 ---------------------
 
