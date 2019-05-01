@@ -33,9 +33,9 @@ def validate_netcdf_geo2d(inNetCDFFile_small=None, inNetCDFFile_big=None, variab
     diff_raster = raster_big - raster_small
     arcpy.CalculateStatistics_management(diff_raster)
     if diff_raster.maximum != 0 or diff_raster.minimum != 0:
-        print "Data does not match @ {0}".format(inNetCDFFile_small)
+        print("Data does not match @ {0}".format(inNetCDFFile_small))
     else:
-        print "validation passed"
+        print("validation passed")
     pass
 
 
@@ -54,7 +54,7 @@ def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
                 assert(big_nc.model_initialization_time == small_nc.model_initialization_time)
                 assert (big_nc.model_initialization_time == small_nc.model_initialization_time)
                 assert (big_nc.model_output_valid_time == small_nc.model_output_valid_time)
-                for name, var_obj in small_nc.variables.iteritems():
+                for name, var_obj in small_nc.variables.items():
 
                     if name in ['x', 'y']:
                         var_x_or_y = var_obj
@@ -88,7 +88,7 @@ def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
                         if len(var_obj.dimensions) > 0:
                             assert (var_obj[:] == big_nc.variables[name][:])
     except Exception as ex:
-       print (ex.message + small_nc)
+       print((ex.message + small_nc))
 
 
 if __name__ == "__main__":
@@ -111,4 +111,4 @@ if __name__ == "__main__":
         # validate_grid_file(big_nc_file=inNetCDFFile_big, small_nc_file=inNetCDFFile_small, grid_dict=grid_dict,)
 
     except Exception as ex:
-        print ex.messag
+        print(ex.messag)

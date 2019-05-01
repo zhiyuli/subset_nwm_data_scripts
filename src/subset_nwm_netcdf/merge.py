@@ -6,7 +6,7 @@ import copy
 import logging
 import glob
 
-import configs
+from . import configs
 
 logger = logging.getLogger('subset_nwm_netcdf')
 
@@ -200,8 +200,7 @@ def _merge_nwm_netcdf(simulation_date_list=None,
     # merge daily analysis_assim to one file
     logger.debug("Prepare to merge daily analysis_assim into one if needed...")
     r = re.compile(r"nwm.20\d\d\d\d\d\d")
-    date_dir_name_list = filter(lambda x: os.path.isdir(os.path.join(output_base_path, x)) and r.match(x),
-                                os.listdir(output_base_path))
+    date_dir_name_list = [x for x in os.listdir(output_base_path) if os.path.isdir(os.path.join(output_base_path, x)) and r.match(x)]
     date_dir_name_list.sort(key=lambda x: int(x.split('.')[1]))
 
     for config_name in ["analysis_assim", "forcing_analysis_assim"]:

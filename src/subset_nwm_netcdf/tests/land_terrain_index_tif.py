@@ -28,7 +28,7 @@ y_len = 3840
 try:
     with netCDF4.Dataset(in_nc_file, mode='r', format='NETCDF4_CLASSIC') as in_nc:
         with netCDF4.Dataset(out_nc_file, mode='r+', format='NETCDF4_CLASSIC') as out_nc:
-            for name, var_obj in out_nc.variables.iteritems():
+            for name, var_obj in out_nc.variables.items():
                 if name in ['x', 'y']:
                     var_obj[:] = in_nc.variables[name][:]
                 # elif name == "x_index":
@@ -37,7 +37,7 @@ try:
                 # elif name == "y_index":
                 #     print "y_index"
                 #     var_obj[:] = numpy.array([[i]*x_len for i in range(y_len)])
-    print "Done"
+    print("Done")
     pass
 except Exception as ex:
-    print(ex.message)
+    print((ex.message))

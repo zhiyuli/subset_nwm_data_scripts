@@ -10,7 +10,7 @@ import logging
 import numpy
 import netCDF4
 
-import configs
+from . import configs
 
 logger = logging.getLogger('subset_nwm_netcdf')
 default_sed_win_path = os.path.join(os.path.dirname(__file__), "static/sed_win32/sed.exe")
@@ -231,16 +231,16 @@ def start_subset_nwm_netcdf_job(job_id=None,
 
                             if model_cfg == "short_range":
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_SR))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_SR), 24)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_SR)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_SR), 24))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if i < int(configs.transition_timestamp_v12_SR)]
                                     time_stamp_v12 = [i for i in time_stamp_list if i >= int(configs.transition_timestamp_v12_SR)]
 
                             elif model_cfg == "medium_range":
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_MR, 6))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_MR), 24, 6)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_MR, 6)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_MR), 24, 6))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_MR)]
@@ -248,8 +248,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                                       i >= int(configs.transition_timestamp_v12_MR)]
                             elif "long_range_mem1" in model_cfg:
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM1, 6))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM1), 24, 6)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_LR_MEM1, 6)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_LR_MEM1), 24, 6))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_LR_MEM1)]
@@ -257,8 +257,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                                       i >= int(configs.transition_timestamp_v12_LR_MEM1)]
                             elif "long_range_mem2" in model_cfg:
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM2, 6))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM2), 24, 6)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_LR_MEM2, 6)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_LR_MEM2), 24, 6))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_LR_MEM2)]
@@ -266,8 +266,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                                       i >= int(configs.transition_timestamp_v12_LR_MEM2)]
                             elif "long_range_mem3" in model_cfg:
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM3, 6))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM3), 24, 6)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_LR_MEM3, 6)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_LR_MEM3), 24, 6))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_LR_MEM3)]
@@ -275,8 +275,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                                       i >= int(configs.transition_timestamp_v12_LR_MEM3)]
                             elif "long_range_mem4" in model_cfg:
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_LR_MEM4, 6))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_LR_MEM4), 24, 6)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_LR_MEM4, 6)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_LR_MEM4), 24, 6))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_LR_MEM4)]
@@ -284,8 +284,8 @@ def start_subset_nwm_netcdf_job(job_id=None,
                                                       i >= int(configs.transition_timestamp_v12_LR_MEM4)]
                             elif model_cfg == "analysis_assim":
                                 if all_timestamp:
-                                    time_stamp_v11 = range(0, int(configs.transition_timestamp_v12_AA))
-                                    time_stamp_v12 = range(int(configs.transition_timestamp_v12_AA), 24)
+                                    time_stamp_v11 = list(range(0, int(configs.transition_timestamp_v12_AA)))
+                                    time_stamp_v12 = list(range(int(configs.transition_timestamp_v12_AA), 24))
                                 else:
                                     time_stamp_v11 = [i for i in time_stamp_list if
                                                       i < int(configs.transition_timestamp_v12_AA)]
@@ -593,29 +593,29 @@ def _subset_nwm_netcdf(job_id=None,
     if file_type == "forcing":
         if model_cfg == "analysis_assim":
             cdl_template_filename = "nwm.tHHz.analysis_assim.forcing.tmXX.conus.cdl_template"
-            var_list.append(["HH", range(24)])  # 00, 01, ... 23
+            var_list.append(["HH", list(range(24))])  # 00, 01, ... 23
             if include_AA_tm12:
-                var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+                var_list.append(["XX", list(range(0, 3))])  # 00, 01, 02
             else:
-                var_list.append(["XX", range(0, 1)])  # 00
+                var_list.append(["XX", list(range(0, 1))])  # 00
         elif model_cfg == "short_range":
             cdl_template_filename = "nwm.tHHz.short_range.forcing.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(24)])  # 00, 01, ... 23
-            var_list.append(["XXX", range(1, 19)])  # 001, 0002 ... 018
+            var_list.append(["HH", list(range(24))])  # 00, 01, ... 23
+            var_list.append(["XXX", list(range(1, 19))])  # 001, 0002 ... 018
         elif model_cfg == "medium_range":
             cdl_template_filename = "nwm.tHHz.medium_range.forcing.fXXX.conus.cdl_template"
-            var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
-            var_list.append(["XXX", range(1, 241)])  # 001, 002, .... 240
+            var_list.append(["HH", list(range(0, 19, 6))])  # 00, 06, 12, 18
+            var_list.append(["XXX", list(range(1, 241))])  # 001, 002, .... 240
         elif model_cfg == "long_range":
             raise Exception("Long-range forecast has no dedicated forcing files.")
 
     elif file_type == "forecast":
         if model_cfg == "analysis_assim":
-            var_list.append(["HH", range(24)])  # 00, 01, 02...23
+            var_list.append(["HH", list(range(24))])  # 00, 01, 02...23
             if include_AA_tm12:
-                var_list.append(["XX", range(0, 3)])  # 00, 01, 02
+                var_list.append(["XX", list(range(0, 3))])  # 00, 01, 02
             else:
-                var_list.append(["XX", range(0, 1)])  # 00
+                var_list.append(["XX", list(range(0, 1))])  # 00
             if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.analysis_assim.channel_rt.tmXX.conus.cdl_template"
             elif data_type == "land":
@@ -626,8 +626,8 @@ def _subset_nwm_netcdf(job_id=None,
                 cdl_template_filename = "nwm.tHHz.analysis_assim.terrain_rt.tmXX.conus.cdl_template"
 
         elif model_cfg == "short_range":
-            var_list.append(["HH", range(24)])  # 00, 01, ... 23
-            var_list.append(["XXX", range(1, 19)])  # 001, 002 ... 18
+            var_list.append(["HH", list(range(24))])  # 00, 01, ... 23
+            var_list.append(["XXX", list(range(1, 19))])  # 001, 002 ... 18
 
             if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.short_range.channel_rt.fXXX.conus.cdl_template"
@@ -639,8 +639,8 @@ def _subset_nwm_netcdf(job_id=None,
                 cdl_template_filename = "nwm.tHHz.short_range.terrain_rt.fXXX.conus.cdl_template"
 
         elif model_cfg == "medium_range":
-            var_list.append(["HH", range(0, 19, 6)])  # 00, 06, ... 18
-            var_list.append(["XXX", range(3, 241, 3)])  # 003, 006, 009, ... 240
+            var_list.append(["HH", list(range(0, 19, 6))])  # 00, 06, ... 18
+            var_list.append(["XXX", list(range(3, 241, 3))])  # 003, 006, 009, ... 240
 
             if data_type == "channel":
                 cdl_template_filename = "nwm.tHHz.medium_range.channel_rt.fXXX.conus.cdl_template"
@@ -655,16 +655,16 @@ def _subset_nwm_netcdf(job_id=None,
             mem_id = int(model_cfg[-1])
             if mem_id in [1, 2, 3, 4]:
                 var_list.append(["M", [mem_id]])  # 1, 2, 3, 4
-                var_list.append(["HH", range(0, 19, 6)])  # 00, 06, 12, 18
+                var_list.append(["HH", list(range(0, 19, 6))])  # 00, 06, 12, 18
 
                 if data_type == "channel":
-                    var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
+                    var_list.append(["XXX", list(range(6, 721, 6))])  # 006, 012, 018, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.channel_rt_M.fXXX.conus.cdl_template"
                 elif data_type == "land":
-                    var_list.append(["XXX", range(24, 721, 24)])  # 024, 048, ... 720
+                    var_list.append(["XXX", list(range(24, 721, 24))])  # 024, 048, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.land_M.fXXX.conus.cdl_template"
                 elif data_type == "reservoir":
-                    var_list.append(["XXX", range(6, 721, 6)])  # 006, 012, 018, ... 720
+                    var_list.append(["XXX", list(range(6, 721, 6))])  # 006, 012, 018, ... 720
                     cdl_template_filename = "nwm.tHHz.long_range.reservoir_M.fXXX.conus.cdl_template"
                 elif data_type == "terrain":
                     raise Exception("Long-range does not output terrain files")
@@ -864,7 +864,7 @@ def _subset_grid_file(in_nc_file=None,
 
                 out_nc.model_initialization_time = in_nc.model_initialization_time
                 out_nc.model_output_valid_time = in_nc.model_output_valid_time
-                for name, var_obj in out_nc.variables.iteritems():
+                for name, var_obj in out_nc.variables.items():
 
                     if resize_dimension:
                         if name in ['x', 'y']:
@@ -1001,7 +1001,7 @@ def _subset_comid_file(in_nc_file=None,
                 out_nc.model_initialization_time = in_nc.model_initialization_time
                 out_nc.model_output_valid_time = in_nc.model_output_valid_time
                 if resize_dimension:
-                    for name, var_obj in out_nc.variables.iteritems():
+                    for name, var_obj in out_nc.variables.items():
                         if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
                             if name == "feature_id":
                                 var_obj[:] = comid_list_np
@@ -1046,7 +1046,7 @@ def _subset_comid_file(in_nc_file=None,
                             # v1.1, merge: time; v1.1: reference_time
                             var_obj[:] = in_nc.variables[name][:]
                 else:  # keep original dimension size
-                    for name, var_obj in out_nc.variables.iteritems():
+                    for name, var_obj in out_nc.variables.items():
                         if len(var_obj.dimensions) == 1 and var_obj.dimensions[0] == "feature_id":
                             if name == "feature_id":
                                 var_obj[:] = in_nc.variables[name][:]

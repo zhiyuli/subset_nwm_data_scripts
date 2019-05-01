@@ -11,14 +11,14 @@
 
 import pycrs
 fromcrs = pycrs.loader.from_file("../static/data/tests/Sphere_Lambert_Conformal_Conic.prj")
-print "esri_wkt"
-print fromcrs.to_esri_wkt()
-print "ogc_wkt"
-print fromcrs.to_ogc_wkt()
+print("esri_wkt")
+print(fromcrs.to_esri_wkt())
+print("ogc_wkt")
+print(fromcrs.to_ogc_wkt())
 
 fromcrs_proj4 = fromcrs.to_proj4()
-print "proj4"
-print fromcrs_proj4
+print("proj4")
+print(fromcrs_proj4)
 
 
 # p=pycrs.parser.from_epsg_code(4269)

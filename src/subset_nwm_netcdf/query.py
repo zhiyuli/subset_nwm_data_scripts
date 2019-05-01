@@ -499,7 +499,7 @@ def _find_closest_value_from_1d_netcdf(netcdf_path=None, search_value_dict=None,
     var_length_dict = {}
 
     with netCDF4.Dataset(netcdf_path, mode='r') as in_nc:
-        for var_name, search_value_list in search_value_dict.iteritems():
+        for var_name, search_value_list in search_value_dict.items():
             var_length_dict[var_name] = len(in_nc.variables[var_name][:])
             var_value_array = in_nc.variables[var_name][:]
             for i in range(len(search_value_list)):
@@ -512,7 +512,7 @@ def _find_closest_value_from_1d_netcdf(netcdf_path=None, search_value_dict=None,
                 closest_value_dict[var_name][i] = closest_value
 
     # add offset to idx
-    for var_name, idx_list in closest_idx_dict.iteritems():
+    for var_name, idx_list in closest_idx_dict.items():
         idx_min = min(idx_list)
         idx_max = max(idx_list)
         if idx_min > 0:
