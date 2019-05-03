@@ -40,4 +40,4 @@ try:
     print("Done")
     pass
 except Exception as ex:
-    print((ex.message))
+    print((str(ex)))

@@ -1,6 +1,9 @@
 import os
 import json
-import exceptions
+try:
+    import exceptions
+except ImportError:
+    import builtins as exceptions
 import logging
 import datetime
 import copy
@@ -16,15 +19,20 @@ import shapely.ops
 from osgeo import ogr
 from osgeo import osr
 
-pyspatialite_load = False
+
+load_sqlite_extension = False
 try:
-    import pyspatialite.dbapi2 as db
-    pyspatialite_load = True
+    import sqlite3 as db
+    load_sqlite_extension = True
 except ImportError:
     try:
-        import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
+        import pyspatialite.dbapi2 as db
+        load_sqlite_extension = True
     except ImportError:
-        raise Exception("Can not load required lib pyspatialite or pysqlite2.")
+        try:
+            import pysqlite2.dbapi2 as db  # mod_spatialite extension should be installed
+        except ImportError:
+            raise Exception("Can not load required standard lib sqlite3 or 3rd party pyspatialite or pysqlite2.")
 
 logger = logging.getLogger('subset_nwm_netcdf')
 
@@ -128,7 +136,7 @@ def query_comids_and_grid_indices(job_id=None,
         return data
     except Exception as ex:
         logger.error("Spatial Query Failed")
-        logger.exception("{0}: {1}".format(str(type(ex)), ex.message))
+        logger.exception("{0}: {1}".format(str(type(ex)), str(ex)))
     finally:
         sq_end_dt = datetime.datetime.now()
         logger.debug(sq_end_dt)
@@ -224,7 +232,9 @@ def _get_first_polygon_exterior_wkt(db_file=None, query_type_lower=None, in_epsg
         if geom_type not in ["polygon", "multipolygon"]:
             raise Exception("Shapefile must be type of Polygon or MultiPolygon")
 
-        first_feature_obj = next(shp_obj_fiona)
+        #first_feature_obj = next(shp_obj_fiona)
+
+        first_feature_obj = next(iter(shp_obj_fiona))
         shape_obj = shapely.geometry.shape(first_feature_obj["geometry"])
 
     elif query_type_lower == "geojson":
@@ -327,7 +337,7 @@ def reproject_wkt_gdal(in_proj_type,
         logger.error("in_proj_value: {0}".format(in_proj_value))
         logger.error("out_proj_type: {0}".format(out_proj_type))
         logger.error("out_proj_value: {0}".format(out_proj_value))
-        logger.error(str(type(ex)) + " " + ex.message)
+        logger.error(str(type(ex)) + " " + str(ex))
         raise ex
 
 
@@ -344,7 +354,7 @@ def _check_supported_epsg(epsg=None, db_file=None):
         return False
 
     except Exception as ex:
-        logger.exception(ex.message)
+        logger.exception(str(ex))
         raise ex
     finally:
         if conn is not None:
@@ -379,7 +389,7 @@ def _perform_spatial_query(db_file=None,
                     );'
 
         conn = db.connect(db_file)
-        if not pyspatialite_load:
+        if load_sqlite_extension:
             conn.enable_load_extension(True)
             conn.execute("SELECT load_extension('mod_spatialite')")
         geometry_field_name = 'Shape'
@@ -428,7 +438,7 @@ def _perform_spatial_query(db_file=None,
 
     except Exception as ex:
         data["status"] = "error"
-        logger.exception(ex.message)
+        logger.exception(str(ex))
     finally:
         if conn is not None:
             conn.close()
@@ -475,10 +485,10 @@ def _query_grid_indices_xy_nc(wkt_str=None,
                                            search_value_dict={"x": [minX, maxX],
                                                               "y": [minY, maxY]}
                                            )
-    return {"minX": offset_idx_dict['x'][0],
-            "maxX": offset_idx_dict['x'][1],
-            "minY": offset_idx_dict['y'][0],
-            "maxY": offset_idx_dict['y'][1],
+    return {"minX": int(offset_idx_dict['x'][0]),
+            "maxX": int(offset_idx_dict['x'][1]),
+            "minY": int(offset_idx_dict['y'][0]),
+            "maxY": int(offset_idx_dict['y'][1]),
             "minX_coord": minX,
             "maxX_coord": maxX,
             "minY_coord": minY,
@@ -642,7 +652,7 @@ def _query_huc(db_file=None, huc_type=None, huc_id=None):
 
     try:
         conn = db.connect(db_file)
-        if not pyspatialite_load:
+        if load_sqlite_extension:
             conn.enable_load_extension(True)
             conn.execute("SELECT load_extension('mod_spatialite')")
         cursor = conn.execute(sql_str_huc_wkt)
@@ -650,7 +660,7 @@ def _query_huc(db_file=None, huc_type=None, huc_id=None):
 
         return huc_wkt
     except Exception as ex:
-        logger.exception(ex.message)
+        logger.exception(str(ex))
         raise ex
     finally:
         if conn is not None:

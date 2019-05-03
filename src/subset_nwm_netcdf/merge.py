@@ -41,7 +41,7 @@ def start_merge_nwm_netcdf_job(job_id=None,
         logger.info("Merge Done in {0}".format(merge_elapse_dt))
         logger.info("---------------------Merge Done {job_id}-----------------------------".format(job_id=job_id))
     except Exception as ex:
-        logger.exception(str(type(ex)) + ex.message)
+        logger.exception(str(type(ex)) + str(ex))
     pass
 
 
@@ -277,7 +277,7 @@ def _merge_nwm_netcdf(simulation_date_list=None,
                                 logger.error(str(ncrcat_cmd))
 
                     except Exception as ex:
-                        logger.error(ex.message)
+                        logger.error(str(ex))
                         logger.error(str(ncrcat_cmd))
 
     pass
@@ -334,6 +334,7 @@ def _perform_merge(HH_re_list=None,
                             logger.error(stdout.rstrip())
                             raise Exception(stdout.rstrip())
                     if stderr:
+                        stderr = str(stderr)
                         if "INFO/WARNING".lower() in stderr.lower():
                             logger.debug(stderr.rstrip())
                         else:
@@ -345,6 +346,6 @@ def _perform_merge(HH_re_list=None,
                             os.remove(f)
 
                 except Exception as ex:
-                    logger.error(ex.message)
+                    logger.error(str(ex))
                     logger.error(str(ncrcat_cmd))
     pass

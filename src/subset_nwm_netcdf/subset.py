@@ -95,7 +95,7 @@ def start_subset_nwm_netcdf_job2(job_id=None,
             logger.debug(sim_end_dt)
             sim_elapsed = sim_end_dt - sim_start_dt
             logger.info("Error in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
-            logger.exception(str(type(ex)) + ex.message)
+            logger.exception(str(type(ex)) + str(ex))
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)
@@ -322,7 +322,7 @@ def start_subset_nwm_netcdf_job(job_id=None,
                         sim_elapsed = sim_end_dt - sim_start_dt
                         logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
-                        logger.exception(str(type(ex)) + ex.message)
+                        logger.exception(str(type(ex)) + str(ex))
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)
@@ -472,7 +472,7 @@ def start_subset_nwm_netcdf_job_old(job_id=None,
                         sim_elapsed = sim_end_dt - sim_start_dt
                         logger.info("Done in {0}; Subsetting Elapsed: {1}".format(sim_elapsed, sim_end_dt - start_dt))
                     except Exception as ex:
-                        logger.exception(str(type(ex)) + ex.message)
+                        logger.exception(str(type(ex)) + str(ex))
 
     end_dt = datetime.datetime.now()
     logger.debug(end_dt)
@@ -676,12 +676,12 @@ def _subset_nwm_netcdf(job_id=None,
     else:
         raise Exception("invalid file_type: {0}".format(file_type))
 
-    if (resize_dimension_feature and data_type in ["channel", "reservoir"] and file_type=="forecast") or \
-        (resize_dimension_grid and data_type in ["land", "terrain"] and file_type=="forecast") or \
-         (resize_dimension_grid and file_type == "forcing"):
-        cdl_template_filename += "_chunked_merge_resize"
-    else:
-        cdl_template_filename += "_chunked_merge"
+    # if (resize_dimension_feature and data_type in ["channel", "reservoir"] and file_type=="forecast") or \
+    #     (resize_dimension_grid and data_type in ["land", "terrain"] and file_type=="forecast") or \
+    #      (resize_dimension_grid and file_type == "forcing"):
+    #     cdl_template_filename += "_chunked_merge_resize"
+    # else:
+    #     cdl_template_filename += "_chunked_merge"
 
     if "long_range_mem" in model_cfg:
         # long_range uses same templates for all mem1-mem4
@@ -933,7 +933,7 @@ def _subset_grid_file(in_nc_file=None,
                                 var_obj[:] = in_nc.variables[name][:]
 
     except Exception as ex:
-        logger.exception(ex.message + in_nc_file)
+        logger.exception(str(ex) + in_nc_file)
         if os.path.isfile(out_nc_file):
             os.remove(out_nc_file)
 
@@ -1092,7 +1092,7 @@ def _subset_comid_file(in_nc_file=None,
                             var_obj[:] = in_nc.variables[name][:]
 
     except Exception as ex:
-        logger.exception(str(type(ex)) + ex.message + in_nc_file)
+        logger.exception(str(type(ex)) + str(ex) + in_nc_file)
         if os.path.isfile(out_nc_file):
             os.remove(out_nc_file)
         # if os.path.isfile(in_nc_file):

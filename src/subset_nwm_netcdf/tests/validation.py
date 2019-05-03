@@ -88,7 +88,7 @@ def validate_grid_file(big_nc_file=None, small_nc_file=None, grid_dict=None,
                         if len(var_obj.dimensions) > 0:
                             assert (var_obj[:] == big_nc.variables[name][:])
     except Exception as ex:
-       print((ex.message + small_nc))
+       print(str(ex) + small_nc)
 
 
 if __name__ == "__main__":
@@ -111,4 +111,4 @@ if __name__ == "__main__":
         # validate_grid_file(big_nc_file=inNetCDFFile_big, small_nc_file=inNetCDFFile_small, grid_dict=grid_dict,)
 
     except Exception as ex:
-        print(ex.messag)
+        print(str(ex))

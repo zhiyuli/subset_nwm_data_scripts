@@ -39,6 +39,9 @@ The copy of the resulting NetCDF files of TwoMileCreek watershed can be found at
 
 The watershed poylgon shapefile is at /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
+## What's new in 2.0 ?
+
+Python 3 compatible
 
 ## What's new in 1.2.4 ?
 
