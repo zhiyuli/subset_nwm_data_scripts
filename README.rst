@@ -9,7 +9,7 @@ National Water Model (NWM) Ver1.2 has been in production since UTC time
 16:00 March 6, 2018
 
 Details about changes in v1.2:
-http://www.nws.noaa.gov/om/notification/scn18-16national\_water\_model.htm
+http://www.nws.noaa.gov/om/notification/scn18-16national_water_model.htm
 
 v1.1
 
@@ -17,12 +17,12 @@ National Water Model (NWM) Ver1.1 has been in production since UTC time
 12PM May 8, 2017
 
 Details about changes in v1.1:
-http://www.nws.noaa.gov/os/notification/scn17-41natl\_water\_modelaaa.htm
+http://www.nws.noaa.gov/os/notification/scn17-41natl_water_modelaaa.htm
 
 What is NWM
 -----------
 
-NWM's daily output is about 430GB worth of NetCDF files that contain
+NWM’s daily output is about 430GB worth of NetCDF files that contain
 meteorological and hydrologic data/forecasts covers the whole U.S. This
 python library enables users to subset NWM Ver1.1 NetCDF using a polygon
 that represents a region of interest, which can significantly reduce
@@ -33,15 +33,15 @@ More about NWM: http://water.noaa.gov/about/nwm
 Version naming convention:
 --------------------------
 
-"1.2.X", say "1.2.5", where "1.2" means NWM Ver1.2 and "5" is the
+“1.2.X”, say “1.2.5”, where “1.2” means NWM Ver1.2 and “5” is the
 version of this library.
 
 Workflow:
 ---------
 
-user-provided polygon --> Spatial Query module\* --> stream comids &
-reservoir comids & grid cell indices (forcing & land & terrain) -->
-Subset module --> Merge module --> regional NetCDF files
+user-provided polygon –> Spatial Query module\* –> stream comids &
+reservoir comids & grid cell indices (forcing & land & terrain) –>
+Subset module –> Merge module –> regional NetCDF files
 
 \*: Spatial Query is optional if user directly provides stream comids &
 reservoir comids & grid cells indices
@@ -58,17 +58,17 @@ https://www.hydroshare.org/resource/fa9af1222795490a953292def5852ace/
 The watershed poylgon shapefile is at
 /www.hydroshare.org/resource/9d0e4cab63d74c0b8e6b6d83254c30de/
 
-What's new in 2.0 ?
+What’s new in 2.0 ?
+-------------------
+
+Python 3 compatible
+
+What’s new in 1.2.4 ?
 ---------------------
 
-Python3 compatible
+Fix “time” dimension bug in merged netcdf for forecast.
 
-What's new in 1.2.4 ?
----------------------
-
-Fix "time" dimension bug in merged netcdf for forecast.
-
-What's new in 1.2.3 ?
+What’s new in 1.2.3 ?
 ---------------------
 
 Further improve support for NWM 1.2: Automatically subset and merge NWM
@@ -90,68 +90,68 @@ LR MEM3 20180306 12:00z
 
 LR MEM4 20180306 12:00z
 
-What's new in 1.2.1 and 1.2.2 ?
+What’s new in 1.2.1 and 1.2.2 ?
 -------------------------------
 
 Update to support NWM 1.2
 
-What's new in 1.1.9 ?
+What’s new in 1.1.9 ?
 ---------------------
 
 This version has one minor bug fix for National Water Model Viewer
 Tethys App. App can subset AA data back to 2017-05-09 (the first
 archived full-day data for NWM Ver1.1)
 
-What's new in 1.1.8 ?
+What’s new in 1.1.8 ?
 ---------------------
 
 1) Improve coordinate projection handling: If shapefile/geojson/wkt user
-   provides has a custom projection that SQLite DB doesn't support, use
+   provides has a custom projection that SQLite DB doesn’t support, use
    GDAL to re-project it to a well-know projection (4326) before spatial
    query
 
-2) Merge multi-day analysis\_assim subsetting results into one: The
+2) Merge multi-day analysis_assim subsetting results into one: The
    naming converstion of resulting files:
-   nwm.tALLz.analysis\_assim.{geometry}.tm{tm}.conus.nc {geometry}:
-   forcing, channel\_rt, reservoir, terrain\_rt, land {tm}: 00, 01, 02
-   Daily analysis\_assim subsetting results will still be kept
+   nwm.tALLz.analysis_assim.{geometry}.tm{tm}.conus.nc {geometry}:
+   forcing, channel_rt, reservoir, terrain_rt, land {tm}: 00, 01, 02
+   Daily analysis_assim subsetting results will still be kept
 
-What's new in 1.1.7 ?
+What’s new in 1.1.7 ?
 ---------------------
 
-1) Add a new flag "include\_AA\_tm12" to control whether to subset tm01
-   and tm02 files of analysis\_assim configuration. Default is True
+1) Add a new flag “include_AA_tm12” to control whether to subset tm01
+   and tm02 files of analysis_assim configuration. Default is True
 
 2) fix a bug in spatial query module: If incoming geometry is 3D,
    convert it to 2D before spatial query
 
-What's new in 1.1.6 ?
+What’s new in 1.1.6 ?
 ---------------------
 
-1) Remove previously added "time" dimension in "reference\_time"
-   variable as it was a violation of CF convention on "coordinate
-   variable""; see:
+1) Remove previously added “time” dimension in “reference_time” variable
+   as it was a violation of CF convention on “coordinate variable”“;
+   see:
    http://www.unidata.ucar.edu/software/netcdf/workshops/2011/datamodels/NcCVars.html
-   But this change causes missing "reference\_time" value in merged
+   But this change causes missing”reference_time" value in merged
    netcdfs as it only stores the value from the first file;
 
-2) Fix bug in "time\_bounds" variable;
+2) Fix bug in “time_bounds” variable;
 
-3) Add "pyspatialite" as a optional dependency in spatial query. Will
+3) Add “pyspatialite” as a optional dependency in spatial query. Will
    try loading pysqlite2 by default, if failed, try loading pyspatialite
    lib. Note: Installation of pyspatialite needs several manual steps on
    linux, but it is so far a good way for CentOS. On Ubuntu and Windows,
-   user should install pysqlite2 + mod\_spatialite binary;
+   user should install pysqlite2 + mod_spatialite binary;
 
-What's new in 1.1.5 ?
+What’s new in 1.1.5 ?
 ---------------------
 
 1) Add two new flags, one for 2D grid file (forcing/land/terrain) and
    one for 1D file (channel/reservoir), to specify whether to keep
    original dimension size unchanged in resulting outputs.
 
-1-1) If True, the sizes of dimension 'x' and 'y' for 2D grid resulting
-file and 'feature\_id' for 1D resulting file will be same as their
+1-1) If True, the sizes of dimension ‘x’ and ‘y’ for 2D grid resulting
+file and ‘feature_id’ for 1D resulting file will be same as their
 originals; Variables outside subsetting domain will be set to
 corresponding Missing Data Values.
 
@@ -164,7 +164,7 @@ process for 1D file.
 
 2) Add python dependencies to setup.py file.
 
-What's new in 1.1.4 ?
+What’s new in 1.1.4 ?
 ---------------------
 
 Use a new approach to perform spatial query on grid cell indices against
@@ -175,22 +175,22 @@ supporting file is the sqlite/spatialite geodatabase for stream,
 reservoir and HUCs; Remove GDAL; Add pyproj and numpy to dependency
 list;
 
-What's new in 1.1.3 ?
+What’s new in 1.1.3 ?
 ---------------------
 
 1) Support subsetting more files:
 
-1-1) "tm01" and "tm02" of each time stamp in analysis\_assim model
+1-1) “tm01” and “tm02” of each time stamp in analysis_assim model
 configuration
 
-1-2) the "terrain" files in all model configurations
+1-2) the “terrain” files in all model configurations
 
 2) speed up spatial query on grid files (forcing, land and terrain)
    using GDAL and further reduce size of supporting files
 
 3) add GDAL as a new dependency
 
-What's new in 1.1.2 and 1.1.1?
+What’s new in 1.1.2 and 1.1.1?
 ------------------------------
 
 First two releases
@@ -208,9 +208,9 @@ Spatial Query module:
 
 2) shapely >= 1.5.17 @ https://pypi.python.org/pypi/Shapely/
 
-3) pysqlite >= 2.8.3 with mod\_spatialite extension @
+3) pysqlite >= 2.8.3 with mod_spatialite extension @
    https://pypi.python.org/pypi/pysqlite/ and
-   https://www.gaia-gis.it/fossil/libspatialite/wiki?name=mod\_spatialite
+   https://www.gaia-gis.it/fossil/libspatialite/wiki?name=mod_spatialite
 
 4) numpy >= 1.12.1 @ https://pypi.python.org/pypi/numpy
 
@@ -237,6 +237,6 @@ Subset & Merge module
 
 Implementation inspired by:
 
-https://github.com/shawncrawley/subset\_nwm\_data\_scripts
+https://github.com/shawncrawley/subset_nwm_data_scripts
 
 https://github.com/twhiteaker/pynwm
